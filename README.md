@@ -1,70 +1,74 @@
-# n-ary notebooks
+# Sum-check and GKR notebooks
 
-**n-ary notebooks** is a collection of mathematical notebooks exploring ideas that arise naturally in the study of zero-knowledge proofs and related areas of cryptography. The emphasis is on *understanding*, *derivation*, and *mechanism* rather than on production-ready implementations.
+This repository contains a collection of **interactive mathematical notebooks**
+explaining the **sum-check protocol**, **multilinear extensions**, **arithmetic
+circuits**, and the **Goldwasser–Kalai–Rothblum (GKR) protocol**.
 
-At present, the notebooks focus primarily on the **sum-check protocol**, **multilinear extensions**, **arithmetic circuis**, and the **GKR protocol**, with an emphasis on why these constructions work, what guarantees they provide, and how their complexity behaves. Over time, the scope may broaden to include other mathematical topics that are relevant to cryptography, verification, or interactive proof systems.
+The emphasis is on _understanding_, _derivation_, and _mechanism_ rather than on
+performance, production engineering, or system integration. The material is
+intended for readers who want to see **why these protocols work**, how their
+guarantees arise, and how complexity and soundness behave in concrete examples.
 
-This is best thought of as a set of **working notes with executable examples**, not as a comprehensive textbook or a complete cryptographic framework.
+This project is best thought of as a set of **working notes with executable
+examples**, not as a textbook or a cryptographic framework.
 
----
+## What this repository is (and is not)
 
-## What these notebooks are (and are not)
+**It is:**
 
-**They are:**
-- Mathematically precise explanations of core ideas behind sum-check and GKR  
-- Interactive demonstrations designed to make abstract arguments concrete  
-- A place to experiment with small-scale implementations and counterexamples  
-- Written with clarity and pedagogy in mind 
+- A mathematically precise, implementation-adjacent explanation of sum-check and
+  GKR
+- Interactive demonstrations designed to make abstract arguments concrete
+- Small-scale code intended for experimentation and pedagogy
+- Focused on clarity, structure, and correctness
 
-**They are not:**
-- A full zk-SNARK system  
-- A performance-optimized prover or verifier  
-- A general-purpose cryptographic library  
-- A substitute for peer-reviewed protocol specifications  
+**It is not:**
 
----
+- A production-ready prover or verifier
+- A performance-optimized implementation
+- A substitute for peer-reviewed protocol specifications
 
 ## Current notebook topics
 
-The current notebooks include (but are not limited to):
+The notebooks currently cover (but are not limited to):
 
 - **Sum-check protocol**
   - Correctness, soundness, and error bounds
   - Degree tracking and verifier efficiency
-  - Concrete examples over finite fields
+  - Explicit examples over finite fields
 
 - **Multilinear extensions**
-  - Boolean hypercubes and polynomial interpolation
-  - Why multilinearity matters in interactive proofs
+  - Boolean hypercubes and interpolation
+  - Why multilinearity is essential in interactive proofs
 
 - **Arithmetic circuits**
   - Circuits as structured polynomials
-  - How circuit structure feeds into sum-check and GKR
+  - Gate labeling, wiring predicates, and propagation identities
 
 - **GKR protocol**
   - High-level structure and intuition
-  - Relationship to sum-check and circuit depth
+  - How sum-check is used layer-by-layer
+  - Folding and claim reduction
 
-Future notebooks may cover additional mathematical tools as they become relevant.
-
----
+The scope may expand over time as additional related topics become relevant.
 
 ## Installation
 
-The project is packaged as a standard Python package so that the notebooks remain focused on mathematics rather than setup code.
+The project is packaged as a standard Python package so that the notebooks can
+focus on mathematics rather than setup code.
 
-The only **system-level dependency** is **Graphviz**, which is required for circuit and protocol visualizations.
-
----
+The only **system-level dependency** is **Graphviz**, which is required for
+circuit and protocol visualizations.
 
 ### 1. System prerequisite: Graphviz
 
-Graphviz must be installed **at the OS level** (the Python package alone is not sufficient).
+Graphviz must be installed at the OS level.
 
 #### macOS
 
 ```bash
 brew install graphviz
+
 ```
 
 #### Linux (Debian / Ubuntu)
@@ -76,7 +80,8 @@ sudo apt install graphviz
 
 #### Windows
 
-1. Download Graphviz from: [https://graphviz.org/download/](https://graphviz.org/download/)
+1. Download Graphviz from:
+   [https://graphviz.org/download/](https://graphviz.org/download/)
 2. Install it and ensure the `dot` executable is added to your `PATH`
 3. Verify installation:
 
@@ -84,17 +89,16 @@ sudo apt install graphviz
 dot -V
 ```
 
----
-
 ### 2. Create a Python environment (recommended)
 
-You can use either **conda** or **pip + venv**. Conda is recommended if you want a fully reproducible environment.
+You can use either **conda** or **pip + venv**. Conda is recommended if you want
+a fully reproducible environment.
 
 #### Option A: Conda (recommended)
 
 ```bash
 conda env create -f environment.yaml
-conda activate zknotes
+conda activate gkr
 ```
 
 #### Option B: pip + venv
@@ -106,19 +110,17 @@ python -m venv .venv
 
 Activate it:
 
-* **Windows (PowerShell)**
+- **Windows (PowerShell)**
 
   ```powershell
   .venv\Scripts\Activate.ps1
   ```
 
-* **macOS / Linux**
+- **macOS / Linux**
 
   ```bash
   source .venv/bin/activate
   ```
-
----
 
 ### 3. Install the package (editable mode)
 
@@ -128,29 +130,28 @@ From the project root:
 pip install -e .
 ```
 
-Editable mode (`-e`) ensures that changes to the source code are immediately reflected in notebooks and scripts without reinstallation.
+Editable mode (`-e`) ensures that changes to the source code are immediately
+reflected in notebooks and scripts without reinstallation.
 
 #### Optional extras
 
-* Notebook support (recommended):
+- Notebook support (recommended):
 
   ```bash
   pip install -e ".[notebook]"
   ```
 
-* Colored terminal output (nice to have):
+- Colored terminal output (nice to have):
 
   ```bash
   pip install -e ".[colors]"
   ```
 
-* Everything:
+- Everything:
 
   ```bash
   pip install -e ".[notebook,colors]"
   ```
-
----
 
 ### 4. Launch Jupyter
 
@@ -164,24 +165,38 @@ or, if you prefer:
 jupyter lab
 ```
 
-The notebooks can import the package directly; no additional initialization is required.
-
----
+The notebooks can import the package directly; no additional initialization is
+required.
 
 ### Notes
 
-* The package also installs a small CLI entry point:
+- The package also installs a small CLI entry point:
 
   ```bash
-  zknotes
+  gkr
   ```
 
   (This will expand over time.)
 
-* Visualization features depend on Graphviz being available on your system. If you encounter rendering errors, verify that `dot` is accessible from the command line.
+- Visualization features depend on Graphviz being available on your system. If
+  you encounter rendering errors, verify that `dot` is accessible from the
+  command line.
 
----
+## Provenance and attribution
+
+Portions of this project were originally developed while the author was employed
+at Inference Labs Inc., and an earlier version of the work lived in the
+repository:
+[https://github.com/inference-labs-inc/n-ary_notebooks](https://github.com/inference-labs-inc/n-ary_notebooks).
+
+The material here has since been reorganized, extended, and maintained
+independently as a personal educational project. The original repository was
+released under the MIT License, and this repository remains MIT-licensed as
+well.
+
+This repository is not affiliated with or endorsed by Inference Labs Inc.
+
 ## License
 
-This project is released under the *MIT License*.
-See the `LICENSE` file at the repository root for full terms.
+This project is released under the _MIT License_. See the `LICENSE` file at the
+repository root for full terms.

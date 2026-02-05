@@ -1,112 +1,35 @@
 from __future__ import annotations
 
-from typing import Optional, Union, List, Dict, Tuple, Set, Any
-from .utils import count_calls, print_header, display_aligned
-from .utils import RED, GREEN, YELLOW, PINK, BLUE, PURPLE, RESET
+from typing import Optional, Union, List, Tuple, Set, Any
+
+from .utils import (
+    count_calls,
+    print_header,
+    display_aligned,
+    stringify,
+    to_string,
+    RED, GREEN, YELLOW, BLUE, RESET,
+    TerminalOutput,
+    out,
+)
+
+from .utils.polynomials import (
+    choose_polynomial,
+    choose_polynomial_with_retries,
+    choose_polynomial_in_ring,
+    random_field_element,
+)
+
 from itertools import product
 import random
-import re
 import time
-from sympy import symbols, Poly, isprime, sympify, degree
+from sympy import symbols, Poly, isprime, degree
 from sympy.polys.domains import GF
-from sympy.polys.domains import Domain
 from sympy.polys.domains.modularinteger import ModularInteger
 from sympy.polys.domains.finitefield import FiniteField
-from sympy.core.numbers import Integer
 from sympy.core.symbol import Symbol
-import random
 import hashlib
 
-from .terminal_output import TerminalOutput, out
-
-def choose_polynomial(
-    field: Optional[Domain] = None,
-    custom_message: Union[None, str] = None,
-    variable_names: Union[None, list] = None,
-    prompt_for_k: bool = True,
-    secret_mode_for_poly: bool = False,
-    *,
-    out: TerminalOutput = out,  
-) -> Union[None, Poly]:
-    """
-    Prompts the user to define a finite field and input a polynomial over that field.
-
-    If a finite field `field` is not provided, the function prompts the user to define one by inputting
-    a prime number `p` and (optionally) an exponent `k`, creating the field GF(p^k).
-
-    NEW:
-      - If prompt_for_k=False, the function will NOT ask for k and will set k := 1.
-        (This is useful for demos where we restrict to prime fields.)
-
-    Args:
-        field (Optional[Domain], optional): An optional SymPy field domain (e.g., GF(p)).
-        custom_message (Union[None, str], optional): A custom message to display when prompting the user
-                                                     for the polynomial. Defaults to None.
-        variable_names (Union[None, list], optional): An optional list of variable names to include.
-        prompt_for_k (bool, optional): If True, prompt for k; if False, set k=1 silently.
-
-    Returns:
-        Union[None, Poly]: A SymPy polynomial object over the field if inputs are valid; otherwise, None.
-
-    Raises:
-        ValueError: If the input prime or exponent cannot be converted to an integer,
-                    or if the provided field is not a prime field.
-    """
-    if field is None:
-        p = out.input("\nEnter a prime p:")
-        try:
-            p = int(p)
-        except ValueError:
-            raise ValueError("Invalid input: p must be an integer.")
-
-        if not isprime(p):
-            out.print("Invalid input: p must be prime.")
-            return None
-
-        if prompt_for_k:
-            k = out.input("Enter an exponent k (the field will have order p**k):")
-            try:
-                k = int(k)
-            except ValueError:
-                raise ValueError("Invalid input: k must be an integer.")
-        else:
-            k = 1
-
-        if k > 1:
-            raise ValueError("Sorry, we're using SymPy and can only handle prime fields at present (k must be 1).")
-
-        field = GF(p, symmetric=False)
-
-    else:
-        if getattr(field, "mod", None) is None:
-            raise ValueError("Provided domain does not look like a prime field with attribute .mod.")
-        if not isprime(field.mod):
-            raise ValueError("Sorry, we're using SymPy and can only handle prime fields at present.")
-        field = GF(field.mod, symmetric=False)
-
-    if custom_message:
-        prompt = custom_message
-    else:
-        prompt = (
-            f"\nEnter your polynomial over {field} "
-            f"(e.g. 2*X_0**2 + X_0*X_1*X_2 + X_1*X_4**3 + X_1 + X_3):"
-        )
-
-    poly_str = out.input(prompt, hidden=secret_mode_for_poly)
-
-    detected_variables = set(re.findall(r"X_\d+", poly_str))
-
-    if variable_names is not None:
-        variable_names = sorted(set(variable_names).union(detected_variables))
-    else:
-        variable_names = sorted(detected_variables) if detected_variables else ["X_0"]
-
-    variables = symbols(variable_names)
-    variable_map = {name: var for name, var in zip(variable_names, variables)}
-
-    poly_expr = sympify(poly_str, locals=variable_map)
-
-    return Poly(poly_expr, variables, domain=field)
 
 def is_multilinear(poly: Poly) -> bool:
     # Check if the degree of each variable in every term is at most 1
@@ -124,8 +47,9 @@ def total_degree_example(out=out) -> None:
             X = symbols(f"X_:{3}")
             g = Poly((X[0] - X[1]) * (X[1] - X[2]), X, domain=GF(5, symmetric=False))
         else:
-            # Do NOT prompt for k in this demo (prime fields only)
-            g = choose_polynomial(prompt_for_k=False)
+            g = choose_polynomial(out=out)
+            if g is None:
+                continue
 
         multilinear: str = 'multilinear' if is_multilinear(g) else 'non-multilinear'
         X_tuple = ', '.join([str(X) for X in g.gens])
@@ -242,7 +166,7 @@ def roots_example(time_out: Optional[float] = None, out=out) -> None:
             X = symbols("X_:3")
             g = Poly(X[0] * X[1] + X[2] ** 2, X, domain=GF(41, symmetric=False))
         else:
-            g = choose_polynomial(prompt_for_k=False)
+            g = choose_polynomial(out=out)
             if g is None:
                 # User entered invalid input; restart loop without incrementing counter.
                 continue
@@ -332,7 +256,7 @@ def sum_check_example(out=out) -> None:
         if loop_counter == 0:
             # Default example
             v: int = 3
-            X: Symbol = symbols(f"X_:{v}")
+            X: Tuple[Symbol, ...] = symbols(f"X_:{v}")
             F: FiniteField = GF(5, symmetric=False)
             multivariate_init: Poly = Poly((X[0] - X[1]) * (X[1] - X[2]), X, domain=F)
             # Calculate the true sum by evaluating the polynomial over all Boolean inputs
@@ -342,11 +266,25 @@ def sum_check_example(out=out) -> None:
             ))
 
             # Call the recursive sum-check protocol
-            sum_check_recursion(
+            res = sum_check_recursion(
                 g_init=multivariate_init,
                 g=multivariate_init,
                 H_star=H,
+                dishonest=[False],          # avoid shared mutable default surprises
+                user_is_verifier=False,
+                user_is_prover=False,
+                show_steps=True,
+                out=out,                    # IMPORTANT: forward the local out
             )
+
+            if res is None:
+                out.print(f"\n{YELLOW}Protocol aborted (cancelled / too many invalid inputs).{RESET}")
+                return
+            if res is False:
+                out.print(f"\n{RED}Verifier rejected.{RESET}")
+                return
+
+            out.print(f"\n{GREEN}Verifier accepted.{RESET}")
         else:
             sum_check()
         again = out.input("\nAnother example? (y/n)").strip().lower()
@@ -357,7 +295,9 @@ def sum_check_example(out=out) -> None:
 def sum_check(out=out, 
               *, 
               use_commitment: bool = False,
-              secret_mode: Optional[bool] = None,) -> Optional[bool]:
+              secret_mode: Optional[bool] = None,
+              show_final_check: bool = True,
+              return_final_value: bool = False,) -> Optional[bool]:
     """
     Sets up and initiates the sum-check protocol using user input and interactive choices.
 
@@ -403,8 +343,7 @@ def sum_check(out=out,
         secret_mode = (user_is_verifier and not user_is_prover)
 
     # Get the polynomial from the user
-    multivariate_init = choose_polynomial(prompt_for_k=False, 
-                                          secret_mode_for_poly=secret_mode, 
+    multivariate_init = choose_polynomial(secret_mode_for_poly=secret_mode, 
                                           out=out)
     if multivariate_init is None:
         return None  # Exit if the polynomial is not provided
@@ -423,19 +362,19 @@ def sum_check(out=out,
     if use_commitment:
         if not user_is_prover:
             opening_selection = out.input(
-                f"\nChoose a, b, or c: About the opened polynomial g, the prover will "
-                f"(a) lie. "
-                f"(b) lie with probability 1/2. "
-                f"(c) not lie.",
+                f"\nChoose a, b, or c: About the opened polynomial g, the prover will be "
+                f"(a) honest. "
+                f"(b) honest with probability 1/2. "
+                f"(c) dishonest.",
                 hidden=secret_mode,
             ).strip().lower()
 
             if opening_selection == "a":
-                dishonest_opening = True
+                dishonest_opening = False
             elif opening_selection == "b":
                 dishonest_opening = bool(random.randint(0, 1))
             else:  # c or anything other than a or b
-                dishonest_opening = False
+                dishonest_opening = True
 
         else:
             # Prover will decide later at opening time.
@@ -446,19 +385,19 @@ def sum_check(out=out,
 
     if not user_is_prover:
         dishonesty_selection = out.input(
-            f"\nChoose a, b, or c: About the value of H (the sum of g over the Boolean hypercube), the prover will "
-            f"(a) lie about the value of H. "
-            f"(b) lie with probability 1/2. "
-            f"(c) not lie.",
+            f"\nChoose a, b, or c: About the value of H (the sum of g over the Boolean hypercube), the prover will be "
+            f"(a) honest. "
+            f"(b) honest with probability 1/2. "
+            f"(c) dishonest.",
             hidden=secret_mode,
             ).strip().lower()
 
         if dishonesty_selection == "a":
-            dishonest: List[bool] = [True]
+            dishonest: List[bool] = [False]
         elif dishonesty_selection == "b":
             dishonest: List[bool] = [bool(random.randint(0, 1))]
         else: # c or anyhing other than a or b
-            dishonest: List[bool] = [False]
+            dishonest: List[bool] = [True]
 
     # Extract polynomial variables, field, and number of variables
     X = multivariate_init.gens
@@ -478,7 +417,7 @@ def sum_check(out=out,
         # skip is a boolean and will be set to True.
         # This signifies that initialization step will be shown.
         # It will be skipped next time sum_check_steps is called, so as not to show the same step twice.
-        user_H_star, skip = sum_check_steps(g_init=multivariate_init,
+        tmp = sum_check_steps(g_init=multivariate_init,
                                             H_star=H,
                                             user_is_verifier=user_is_verifier,
                                             user_is_prover=user_is_prover,
@@ -486,8 +425,22 @@ def sum_check(out=out,
                                             commit_hash=commit_hash,
                                             dishonest_opening=dishonest_opening,
                                             secret_mode=secret_mode,
+                                            show_final_check=show_final_check,
                                             out=out,)
-        user_H_star = int(user_H_star)
+        if tmp is None:
+            return None
+        
+        user_H_star, skip = tmp
+
+        if user_H_star is None:
+            return None
+        
+        try:
+            user_H_star = int(user_H_star)
+        except (TypeError, ValueError):
+            out.print(f"\n{YELLOW}Aborting: invalid H* input.{RESET}")
+            return None
+
         H_star = F.convert(user_H_star)
         if H_star == H:
             dishonest: List[bool] = [False]
@@ -515,50 +468,62 @@ def sum_check(out=out,
         commit_hash=commit_hash,
         dishonest_opening=dishonest_opening,
         secret_mode=secret_mode,
+        return_final_value=return_final_value,
+        show_final_check=show_final_check,
         out=out,
     )
-    print_header("Ground truth", level=1, out=out)
 
-    # Truncated display of true g
-    X_ = stringify(multivariate_init.gens)
-    expr_str = str(multivariate_init.as_expr())
-    MAX = 800  # characters
+    if result is None:
+        out.print(f"\n{YELLOW}Protocol aborted.{RESET}")
+        return None
 
-    if len(expr_str) > MAX:
-        expr_str = expr_str[:MAX] + " ... (truncated)"
+    if result is False:
+        # return False # Possible early return
+        pass
 
-    out.print(f"\nTrue polynomial g:\n\ng({X_}) = {expr_str}")
+    if show_final_check:
+        print_header("Ground truth", level=1, out=out)
 
-    # If commitments were used, clarify opening behavior
-    if use_commitment:
-        out.print("\nCommitment behavior:")
-        if dishonest_opening:
-            out.print(f"\nProver attempted a {RED}dishonest opening{RESET}.")
+        # Truncated display of true g
+        X_ = stringify(multivariate_init.gens)
+        expr_str = str(multivariate_init.as_expr())
+        MAX = 800  # characters
+
+        if len(expr_str) > MAX:
+            expr_str = expr_str[:MAX] + " ... (truncated)"
+
+        out.print(f"\nTrue polynomial g:\n\ng({X_}) = {expr_str}")
+
+        # If commitments were used, clarify opening behavior
+        if use_commitment:
+            out.print("\nCommitment behavior:")
+            if dishonest_opening:
+                out.print(f"\nProver attempted a {RED}dishonest opening{RESET}.")
+            else:
+                out.print(f"\nProver opened the {GREEN}correct polynomial{RESET}.")
+
+        # True value of H
+        out.print(f"\nTrue value of H := sum g(b) over b in {{0,1}}^{v} is: {int(H)}")
+        out.print(f"\nProver claimed that this is equal to: H* = {int(F(H_star))}.")
+
+        if result:
+            out.print(f"\nOutcome: V {GREEN}ACCEPTED{RESET}.")
+            if F(H_star) == F(H):
+                out.print(f"\n{GREEN}This was a TRUE POSITIVE{RESET}: the claim H = H* was correct.")
+            else:
+                out.print(f"\n{RED}This was a FALSE POSITIVE{RESET}: V accepted a false claim (P got lucky).")
         else:
-            out.print(f"\nProver opened the {GREEN}correct polynomial{RESET}.")
+            out.print(f"\nOutcome: V {RED}REJECTED{RESET}.")
+            if F(H_star) == F(H):
+                out.print(f"{YELLOW}\nThis was a FALSE NEGATIVE{RESET}: rejection happened despite a true claim (should be rare unless opening failed / transcript inconsistent).")
+            else:
+                out.print(f"{GREEN}\nThis was a TRUE NEGATIVE{RESET}: V rejected a false claim.")
 
-    # True value of H
-    out.print(f"\nTrue value of H := ∑ g(b) over {{0,1}}^{v} is: {int(H)}")
-    out.print(f"\nClaimed H* = {int(F(H_star))}.")
+        out.print("")
 
-    if result:
-        out.print(f"\nOutcome: V {GREEN}ACCEPTED{RESET}.")
-        if F(H_star) == F(H):
-            out.print(f"\n{GREEN}This was a TRUE POSITIVE{RESET}: the claim H = H* was correct.")
-        else:
-            out.print(f"\n{RED}This was a FALSE POSITIVE{RESET}: V accepted a false claim (P got lucky).")
-    else:
-        out.print(f"\nOutcome: V {RED}REJECTED{RESET}.")
-        if F(H_star) == F(H):
-            out.print(f"{YELLOW}\nThis was a FALSE NEGATIVE{RESET}: rejection happened despite a true claim (should be rare unless opening failed / transcript inconsistent).")
-        else:
-            out.print(f"{GREEN}\nThis was a TRUE NEGATIVE{RESET}: V rejected a false claim.")
-
-    out.print("")
-
-    if hasattr(out, "flush"):
-        out.flush()
-    return result
+        if hasattr(out, "flush"):
+            out.flush()
+        return result
 
 @count_calls
 def sum_check_recursion(
@@ -566,7 +531,7 @@ def sum_check_recursion(
     g: Poly,
     H_star: Union[int, ModularInteger],
     r: Union[None, List[Union[int, ModularInteger]]] = None,
-    dishonest: List[bool] = [False],
+    dishonest: Optional[List[bool]] = None,
     user_is_verifier: bool = False,
     user_is_prover: bool = False,
     show_steps: bool = True,
@@ -577,6 +542,8 @@ def sum_check_recursion(
     secret_mode: Optional[bool] = None,
     *,
     out: TerminalOutput = out,
+    return_final_value: bool = False,
+    show_final_check: bool = True,
 ) -> bool:
     """
     Recursively executes the rounds of the sum-check protocol, verifying each polynomial claim.
@@ -607,7 +574,8 @@ def sum_check_recursion(
 
     # Initialize field and the challenges list if empty
     F = g.domain
-    r = r or []
+    if r is None:
+        r = []
 
     # Substitute the last element in r into g if r is non-empty
     g = g.subs({g.gens[0]: F(r[-1])}) if r else g
@@ -629,12 +597,25 @@ def sum_check_recursion(
                                  commit_hash=commit_hash,
                                  dishonest_opening=dishonest_opening,
                                  secret_mode=secret_mode,
+                                 show_final_check=show_final_check,
                                  out=out,)
             out.flush()
+
+            if ok is None:
+                return None
+            
             if ok is False:
                 return False
+            
         # Check if the final evaluated polynomial matches the original claim
-        return H_star == F(g_init.eval({g_init.gens[k]: r_ for k, r_ in enumerate(r)}))
+        ok_final = (H_star == F(g_init.eval({g_init.gens[k]: r_ for k, r_ in enumerate(r)})))
+
+        if return_final_value:
+            # gamma = g*_{v-1}(r_{v-1}), where "g" is the last univariate polynomial
+            gamma = F.convert(int(H_star))
+            return (gamma if ok_final else False)
+        
+        return ok_final
 
     # Define variables for the current polynomial's generators and the number of variables
     X, v = g.gens, len(g.gens)
@@ -671,9 +652,12 @@ def sum_check_recursion(
                                     commit_hash=commit_hash,
                                     dishonest_opening=dishonest_opening,
                                     secret_mode=secret_mode,
+                                    show_final_check=show_final_check,
                                     out=out,)
         if res is False:
             return False
+        if res is None:
+            return None
         assert isinstance(res, Poly)
         g_0_star = res
 
@@ -690,7 +674,11 @@ def sum_check_recursion(
                         commit_hash=commit_hash,
                         dishonest_opening=dishonest_opening,
                         secret_mode=secret_mode,
+                        show_final_check=show_final_check,
                         out=out,)
+        if ok is None:
+            return None
+        
         if ok is False:
             return False
 
@@ -718,10 +706,13 @@ def sum_check_recursion(
                                    dishonest=dishonest,
                                    user_is_verifier=user_is_verifier,
                                    user_is_prover=user_is_prover,
+                                   show_steps=show_steps,                                   
                                    use_commitment=use_commitment,
                                    commit_hash=commit_hash,
                                    dishonest_opening=dishonest_opening,
                                    secret_mode=secret_mode,
+                                   return_final_value=return_final_value,
+                                   show_final_check=show_final_check,
                                    out=out,)
     else:
         return False  # Reject if sum-check claim fails
@@ -743,6 +734,7 @@ def sum_check_steps(
     commit_hash: Optional[str] = None,
     dishonest_opening: bool = False, 
     secret_mode: Optional[bool] = None,
+    show_final_check: bool = True,
     *,
     out: TerminalOutput = out,
 ) -> Union[None, bool, Tuple[str, bool], Poly]:
@@ -761,12 +753,17 @@ def sum_check_steps(
     b: List[str] = [f"b_{k}" for k in range(v)]
     X_ = stringify(X)
     b_ = stringify(b)
-    r = r or []
+    if r is None:
+        r = []
 
     # ----------------------------
     # Final verification 
     # ----------------------------
     if final_check and r:
+        if not show_final_check:
+            # For GKR: skip printing/oracle-opening section entirely,
+            # but DO stop here so we don't run "Round v" and index X[v].
+            return True
         print_header("\nFinal check", level=2, out=out)
 
         # "sampled; here r_{v-1} = ..."
@@ -808,31 +805,34 @@ def sum_check_steps(
             if user_is_prover:
                 # Let prover choose what to open with (honest or not).
                 choice = out.input(
-                    "\nPress ENTER to open honestly, or type 'x' to enter a different polynomial to open: ",
-                    hidden=secret_mode,
-                ).strip().lower()
+                        f"\nChoose a, b, or c: About the opened polynomial g, you, as prover, will "
+                        f"(a) be honest. "
+                        f"(b) enter a polynomial (honest or dishonest) yourself. "
+                        f"(c) be dishonest.",
+                        hidden=secret_mode,
+                    ).strip().lower()
 
-                if choice == "x":
+                if choice == "a":
+                    g_open = g_init
+                elif choice == "b":
                     # Prover supplies an opening polynomial (can be dishonest).
-                    g_open = choose_polynomial(
-                        field=F,
-                        custom_message="\nEnter the polynomial you want to open with:",
-                        variable_names=[str(x) for x in g_init.gens],
-                        prompt_for_k=False,
-                        secret_mode_for_poly=bool(secret_mode),  # hide typing if you want
-                        out=out,
+                    g_open = choose_polynomial_in_ring(
+                    field=F,
+                    gens=g_init.gens,
+                    custom_message="\nEnter the polynomial you, as prover, want to open with: ",
+                    secret_mode_for_poly=bool(secret_mode),
+                    out=out,
                     )
                     if g_open is None:
                         out.print(f"\nV {RED}REJECTS{RESET}: no polynomial provided at opening.")
                         return False
+                else:  # c or anything other than a or b
+                    g_open = g_init + F(1)
+
             else:
                 # Non-prover mode: keep your scripted dishonesty.
                 if dishonest_opening:
                     g_open = g_init + F(1)
-
-
-            # if dishonest_opening:
-            #     g_open = g_init + F(1)   # same vars/field, changes constant term
 
             # Optional: if you want to hide that prover chose to lie until the end:
             if not secret_mode and dishonest_opening:
@@ -878,13 +878,14 @@ def sum_check_steps(
                     f"\n{YELLOW}P GOT LUCKY:{RESET} the final random check happened not to expose the inconsistency "
                     f"this time. Over a large field, this success event should be rare."
                 )
+            return True
         else:
             out.print(f"\nP fails the final verification, and V {RED}REJECTS{RESET} P's initial claim that H = H*.")
             out.print(
                 f"\n{YELLOW}Interpretation: P can often keep the transcript locally consistent round-by-round, "
                 f"but the final random evaluation ties the transcript to the true g and typically catches a lie.\n{RESET}"
             )
-        return
+            return False
 
     # ----------------------------
     # Initialization (only when r empty and not skipped)
@@ -917,9 +918,9 @@ def sum_check_steps(
 
         if user_is_prover:
             if secret_mode is True:
-                user_H_star = out.input(f"\nAs prover, enter your claim H* for the value of H:", hidden=secret_mode)
+                user_H_star = out.input(f"\nAs prover, enter your claim H* for the value of H: ", hidden=secret_mode)
             else:
-                user_H_star = out.input(f"\nAs prover, enter your claim H* for the value of H (the true value is {int(H_star)}):")
+                user_H_star = out.input(f"\nAs prover, enter your claim H* for the value of H (the true value is {int(H_star)}): ")
             skip = True
             return user_H_star, skip
         else:
@@ -990,10 +991,10 @@ def sum_check_steps(
                 f"and the roots (in {F}) of g*_{j} - g_{j} are: {print_roots}."
             )
             out.print(f"\nThe probability of V sampling one of these roots as the next challenge is "
-                  f"{len(roots)}/{F.mod} = {len(roots)/F.mod:.2f}.")
+                  f"{len(roots)}/{F.mod} = {len(roots)/F.mod:.10f}.")
             out.print(
                 f"\nIn general, by Schwartz-Zippel, this probability cannot exceed "
-                f"deg_{j}(g)/#F = {g_init.degree(X[j])}/{F.mod} = {g_init.degree(X[j])/F.mod:.2f}."
+                f"deg_{j}(g)/#F = {g_init.degree(X[j])}/{F.mod} = {g_init.degree(X[j])/F.mod:.10f}."
             )
             out.print(f"\nIn this event, V will ultimately accept the original false claim for the value of H.")
             out.print(
@@ -1017,8 +1018,20 @@ def sum_check_steps(
             out.print(f"\nWe are unable to suggest a polynomial satisfying (a) and (b)—perhaps no such polynomial exists.")
             out.print(f"\nIf no such polynomial exists, we've been caught in a lie and V will reject immediately.")
 
-        prompt = f"\nEnter your g*_{j}({str(X[j])}):"
-        g_0_star = choose_polynomial(field=F, custom_message=prompt, variable_names=[f"X_{j}"], prompt_for_k=False, out=out)
+        prompt = f"\nType 'cancel' to abort, or your g*_{j}({str(X[j])}): "
+        g_0_star = choose_polynomial_with_retries(
+            field=F,
+            custom_message=prompt,
+            preferred_order=[X[j]],        # force univariate gens
+            secret_mode_for_poly=False,
+            echo_back=False,
+            max_attempts=3,
+            out=out,
+        )
+        if g_0_star is None:
+            out.print(f"\n{RED}Input cancelled or invalid too many times. Aborting this run.{RESET}")
+            return None   
+        
         out.print(f"\n{RED}=== END INVISIBLE TO VERIFIER ==={RESET}")
 
     # ----------------------------
@@ -1064,143 +1077,17 @@ def sum_check_steps(
     if F(H_star) != F(g_0_star.eval(F(0)) + g_0_star.eval(F(1))):
         out.print(f"\nV {RED}REJECTS{RESET} upon exposing an inconsistency in P's claims. The protocol terminates.")
         return False
-    else:
-        out.print("\nV sees that P's claims so far are consistent.")
+    
+    out.print("\nV sees that P's claims so far are consistent.")
 
-    if user_is_prover and dishonest:
+    # Only in the "dishonest prover picks g*_j" branch do we need to return the Poly
+    if user_is_prover and dishonest[-1]:
         return g_0_star
 
-
-# Helper functions
-
-def stringify(*args: Union[Tuple[Symbol], List[Union[str, int, 'ModularInteger']]]) -> str:
-    """
-    Converts a list of coordinates (tuples or lists) into a single formatted string.
-
-    Args:
-        *args (Union[Tuple[Symbol], List[Union[str, int, ModularInteger]]]):
-              Variable-length arguments of tuples or lists containing coordinates.
-
-    Returns:
-        str: A comma-separated string representation of the coordinates.
-    """
-    result = []
-    for coordinates in args:
-        if not coordinates:
-            continue  # Skip empty coordinates
-
-        # Convert each element in the coordinates to a string
-        coordinates_str = [to_string(c) for c in coordinates]
-
-        # Join the coordinates with commas and add to the result list
-        result.append(', '.join(coordinates_str))
-
-    # Return all coordinate strings joined with commas
-    return ', '.join(result)
-
-
-def to_string(c):
-    """
-    Converts an element to its string representation based on its type.
-
-    Args:
-        c: The element to be converted (could be a Symbol, ModularInteger, or int).
-
-    Returns:
-        str: The string representation of the element.
-    """
-    if isinstance(c, Symbol):
-        return str(c)  # Convert Symbol to string
-    if isinstance(c, ModularInteger):
-        return str(int(c))  # Convert ModularInteger to int, then to string
-    if isinstance(c, int):
-        return str(c)  # Convert int to string
-    return str(c)  # Default conversion to string
-
+    # Otherwise this call was purely expository: it succeeded.
+    return True
 
 """ANCILLARY FUNCTIONS"""
-
-def random_field_element(
-    field: FiniteField,
-    user_input: bool = False,
-    custom_message: Union[None, str] = None,
-    max_attempts: Optional[int] = None,
-    *,
-    out: TerminalOutput = out,
-) -> Optional[ModularInteger]:
-    """
-        Generates a random element from the finite field.
-
-        Args:
-            field (FiniteField): The finite field GF(p).
-            user_input (bool): If True, prompts the user to input the element.
-            custom_message (Union[None, str], optional): A custom message to display to the user when prompting
-                                                         for input. Defaults to None, in which case a default
-                                                         message is used.
-            max_attempts (Optional[int], optional): Maximum number of attempts for user input. Defaults to None,
-                                                    meaning unlimited attempts.
-
-        Returns:
-            Optional[ModularInteger]: A random field element if successful, or None if the user cancels or
-                                      exceeds the maximum number of attempts.
-
-        Notes:
-            - If `user_input` is True, the function will prompt the user to input a field element.
-            - If `custom_message` is provided, it will override the default message displayed to the user.
-            - If `user_input` is False, the function generates a random element from the finite field.
-        """
-    if user_input:
-        user_response = input_random_field_element(custom_message=custom_message, max_attempts=max_attempts, out=out,)
-        if isinstance(user_response, int):
-            return field(user_response)
-        else:
-            return None
-    # Generate a random integer between 0 and p - 1
-    return field(random.randint(0, field.mod - 1))
-
-
-def input_random_field_element(custom_message: Union[None, str] = None, max_attempts: Optional[int] = None, *, out: TerminalOutput = out) -> Optional[int]:
-    """
-        Prompts the user to input an integer element from the field.
-
-        Args:
-            custom_message (Union[None, str], optional): A custom message to display when prompting the user for input.
-                                                         Defaults to a standard prompt if not provided.
-            max_attempts (Optional[int], optional): Maximum number of attempts allowed for input. If None, unlimited
-                                                    attempts are allowed.
-
-        Returns:
-            Optional[int]: The integer entered by the user if valid, or None if the user cancels or the maximum
-                           number of attempts is exhausted.
-
-        Notes:
-            - If `custom_message` is provided, it overrides the default prompt message shown to the user.
-            - If the user inputs `c`, the function cancels and returns None.
-            - If `max_attempts` is specified, the user is limited to the given number of attempts.
-            - When the maximum number of attempts is reached without valid input, the function returns None.
-        """
-    attempts = 0 if max_attempts is not None else None
-    prompt = custom_message if custom_message is not None else "\nEnter c to cancel or select element uniformly at random from field, independent of any previous selection:"
-
-    while attempts is None or (attempts != max_attempts):
-        response = out.input(prompt)
-        if response == 'c':
-            return None
-        try:
-            response_int = int(response)
-            return response_int
-        except ValueError:
-            if attempts is not None:
-                attempts += 1
-                if attempts == max_attempts:
-                    out.print("\nInvalid input. No more attempts.")
-                    return None
-                elif attempts == max_attempts - 1:
-                    prompt = "\nInvalid input. Final attempt: enter an integer, or c to cancel:"
-                else:
-                    prompt = "\nInvalid input. Enter an integer, or c to cancel:"
-            else:
-                prompt = "\nInvalid input. Enter an integer, or c to cancel:"
 
 """
 START: FUNCTIONS RELATED TO ROLE OF PROVER, WHETHER DISHONEST OR HONEST
@@ -1283,7 +1170,7 @@ def dishonest_polynomial_with_boundary_condition(g_0: Poly,
     # Deal with some degenerate cases
     if d < 0: # g_0 is the zero polynomial and g_0_star must also be. But we require g_0_star to be distinct from g_0
         return None, None, None
-    if d == 0: # g_0 is constant (possibly zero) and g_0_start must also be---a different constant.
+    if d == 0: # g_0 is constant (possibly zero) and g_0_star must also be---a different constant.
         if p > 2:
             g_0_star = Poly(H_star / field.convert(2), g_0.gens[0], domain=field)  # So that 2*g_0_star = H_star
             if g_0_star == g_0:

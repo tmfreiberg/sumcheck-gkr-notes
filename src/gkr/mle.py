@@ -1,17 +1,24 @@
 from typing import Optional, Union, List, Dict, Tuple, Callable, Sequence, Any
-from .utils import RED, GREEN, YELLOW, BLUE, RESET
-from .sum_check import stringify
+from .utils import (
+    stringify,
+    RED, GREEN, YELLOW, BLUE, RESET,
+    TerminalOutput,
+    out,
+)
+
+from .utils.polynomials import (
+    choose_prime_field,
+)
+
 import numpy as np
 from itertools import product
 from sympy import symbols, Poly, isprime
 from sympy.polys.domains import GF
-from sympy.polys.domains import Domain
 from sympy.polys.domains.modularinteger import ModularInteger
 from sympy.polys.domains.finitefield import FiniteField
 from sympy.core.numbers import Integer
 from sympy.core.symbol import Symbol
 
-from .terminal_output import TerminalOutput, out
 
 """
 CONSTRUCTING MLE
@@ -51,9 +58,9 @@ def tilde_beta_poly(
 
     # Default values for X and Y if not provided
     if X is None:
-        X = symbols(f"x_:{v}")
+        X: Tuple[Symbol, ...] = symbols(f"x_:{v}")
     if Y is None:
-        Y = symbols(f"y_:{v}")
+        Y: Tuple[Symbol, ...] = symbols(f"y_:{v}")
 
     # Generate the arrays of polynomials for x and y variables
     XY = X + Y
@@ -97,8 +104,8 @@ def multilinear_extension(
         return Poly(fb, X, domain=field)
     else:
         # Create symbols for the x and y variables
-        X = symbols(f"x_:{v}")
-        Y = symbols(f"y_:{v}")
+        X: Tuple[Symbol, ...] = symbols(f"x_:{v}")
+        Y: Tuple[Symbol, ...] = symbols(f"y_:{v}")
 
         # Compute the tilde_beta polynomial
         tilde_beta = tilde_beta_poly(field=field, v=v, X=X, Y=Y)
@@ -119,9 +126,6 @@ def multilinear_extension(
             term = fb * tilde_beta.subs(b_point)
             tilde_f += term
 
-        # # Convert the final expression to a polynomial
-        # tilde_f = Poly(tilde_f_expr, X, domain=field)
-
         return tilde_f
 
 
@@ -133,7 +137,7 @@ def lagrange_basis(v: int,
                    field: FiniteField) -> List[Tuple[Poly, Poly]]:
     """Creates Lagrange basis polynomials for the points 0 and 1 in each variable."""
     field = GF(field.mod, symmetric=False)
-    X = symbols(f"x_:{v}")
+    X: Tuple[Symbol, ...] = symbols(f"x_:{v}")
     basis = []
     for j in range(v):
         # Basis polynomials are (1 - x_j) for point 0 and x_j for point 1
@@ -154,7 +158,7 @@ def multilinear_extension_using_lagrange_basis(
     field = GF(field.mod, symmetric=False)
 
     # Define symbolic variables
-    X = symbols(f"x_:{v}")
+    X: Tuple[Symbol, ...] = symbols(f"x_:{v}")
 
     basis=lagrange_basis(v=v,
                          field=field,)
@@ -215,7 +219,8 @@ def multilinear_extension_example(
             out.print(f"\n{BLUE}EXAMPLE {loop_counter + 1}.{RESET}")
         else:
             out.print(f"\n{BLUE}EXAMPLE {loop_counter + 1}.{RESET}")
-            p = int(out.input("Enter a prime number p (we will work over GF(p)): ").strip())
+            field = choose_prime_field(out=out, prompt="Enter a prime p (we will work over GF(p)): ")
+            p = int(field.mod)
             if not isprime(p):
                 out.print(f"{RED}Invalid input: p must be prime.{RESET}")
                 continue
@@ -280,8 +285,8 @@ def multilinear_extension_example(
         grid.append(eval_array)
 
         if show_result:
-            X = stringify(symbols(f"x_:{v}"))
-            out.print(f"\nThe multilinear extension of this function is:\n\n{YELLOW}f̃({X}) = {extended_func.as_expr()}{RESET}")
+            X_str: str = stringify(symbols(f"x_:{v}"))
+            out.print(f"\nThe multilinear extension of this function is:\n\n{YELLOW}f̃({X_str}) = {extended_func.as_expr()}{RESET}")
 
         if show_result and v <= 2 and p < 50:
             out.print(f"\nIn the following array, entry (i,j) is f̃(i,j):\n")

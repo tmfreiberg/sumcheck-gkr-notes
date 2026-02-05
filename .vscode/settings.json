@@ -1,0 +1,7 @@
+{
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "prettier.printWidth": 80,
+  "prettier.proseWrap": "always"
+}
