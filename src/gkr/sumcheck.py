@@ -18,6 +18,7 @@ from .utils.polynomials import (
     choose_polynomial_with_retries,
     choose_polynomial_in_ring,
     random_field_element,
+    parse_poly,
 )
 
 from itertools import product
@@ -540,6 +541,7 @@ def sum_check_recursion(
     commit_hash: Optional[str] = None,
     dishonest_opening: bool = False, 
     secret_mode: Optional[bool] = None,
+    degree_bounds: Optional[List[int]] = None,
     *,
     out: TerminalOutput = out,
     return_final_value: bool = False,
@@ -547,6 +549,12 @@ def sum_check_recursion(
 ) -> bool:
     """
     Recursively executes the rounds of the sum-check protocol, verifying each polynomial claim.
+
+    If `degree_bounds` is provided (a list of per-variable degree bounds), the verifier's
+    degree checks use these PUBLIC bounds instead of degrees read off the true polynomial.
+    This matters when the true polynomial is not known to the verifier (e.g. inside GKR,
+    where the summand involves W-tilde of the next layer): the bound must be public,
+    structural information.
 
     Each recursive call corresponds to one round of the protocol:
     - Reduces the current polynomial by substituting a challenge and summing over the remaining variables.
@@ -597,6 +605,7 @@ def sum_check_recursion(
                                  commit_hash=commit_hash,
                                  dishonest_opening=dishonest_opening,
                                  secret_mode=secret_mode,
+                                 degree_bounds=degree_bounds,
                                  show_final_check=show_final_check,
                                  out=out,)
             out.flush()
@@ -607,14 +616,16 @@ def sum_check_recursion(
             if ok is False:
                 return False
             
+        if return_final_value:
+            # GKR mode: there is no oracle evaluation of g here. The caller judges the
+            # truth of the transcript via the bridging equation, so we return the
+            # terminal claim gamma = g*_{v-1}(r_{v-1}) unconditionally (even if the
+            # transcript is a surviving lie).
+            gamma = F.convert(int(H_star))
+            return gamma
+
         # Check if the final evaluated polynomial matches the original claim
         ok_final = (H_star == F(g_init.eval({g_init.gens[k]: r_ for k, r_ in enumerate(r)})))
-
-        if return_final_value:
-            # gamma = g*_{v-1}(r_{v-1}), where "g" is the last univariate polynomial
-            gamma = F.convert(int(H_star))
-            return (gamma if ok_final else False)
-        
         return ok_final
 
     # Define variables for the current polynomial's generators and the number of variables
@@ -626,10 +637,13 @@ def sum_check_recursion(
 
     if dishonest[-1]:
         j = sum_check_recursion.call_count
-        try:
-            d = g_init.degree(g_init.gens[j])
-        except IndexError:
-            d = g_init.degree(g_init.gens[j - 1])
+        if degree_bounds is not None:
+            d = int(degree_bounds[min(j, len(degree_bounds) - 1)])
+        else:
+            try:
+                d = g_init.degree(g_init.gens[j])
+            except IndexError:
+                d = g_init.degree(g_init.gens[j - 1])
         if not user_is_prover:
             g_0_star, roots_of_g_0_star_minus_g_0, _ = dishonest_polynomial_with_boundary_condition(g_0=g_0,max_degree=d, H_star=H_star)
         else:
@@ -652,6 +666,7 @@ def sum_check_recursion(
                                     commit_hash=commit_hash,
                                     dishonest_opening=dishonest_opening,
                                     secret_mode=secret_mode,
+                                    degree_bounds=degree_bounds,
                                     show_final_check=show_final_check,
                                     out=out,)
         if res is False:
@@ -674,6 +689,7 @@ def sum_check_recursion(
                         commit_hash=commit_hash,
                         dishonest_opening=dishonest_opening,
                         secret_mode=secret_mode,
+                        degree_bounds=degree_bounds,
                         show_final_check=show_final_check,
                         out=out,)
         if ok is None:
@@ -684,7 +700,10 @@ def sum_check_recursion(
 
     # Verify degree consistency
     j = sum_check_recursion.call_count
-    d = g_0.degree(g_init.gens[j])
+    if degree_bounds is not None:
+        d = int(degree_bounds[min(j, len(degree_bounds) - 1)])
+    else:
+        d = g_0.degree(g_init.gens[j])
     if g_0_star.degree() > d:
         return False  # Reject if degree exceeds the claim
 
@@ -711,6 +730,7 @@ def sum_check_recursion(
                                    commit_hash=commit_hash,
                                    dishonest_opening=dishonest_opening,
                                    secret_mode=secret_mode,
+                                   degree_bounds=degree_bounds,
                                    return_final_value=return_final_value,
                                    show_final_check=show_final_check,
                                    out=out,)
@@ -735,6 +755,7 @@ def sum_check_steps(
     dishonest_opening: bool = False, 
     secret_mode: Optional[bool] = None,
     show_final_check: bool = True,
+    degree_bounds: Optional[List[int]] = None,
     *,
     out: TerminalOutput = out,
 ) -> Union[None, bool, Tuple[str, bool], Poly]:
@@ -742,13 +763,20 @@ def sum_check_steps(
     Displays and guides through the detailed reasoning steps of each round in the sum-check protocol.
 
     NOTE: This function is intentionally print-heavy and is used for exposition.
+
+    If `degree_bounds` is provided, the displayed/checked per-variable degree bounds are
+    these PUBLIC bounds rather than degrees read off the true polynomial (see
+    sum_check_recursion).
     """
     j = sum_check_recursion.call_count  # Current recursion depth
     X, v, F = g_init.gens, len(g_init.gens), g_init.domain
-    try:
-        d = g_init.degree(g_init.gens[j])
-    except IndexError:
-        d = g_init.degree(g_init.gens[j - 1])
+    if degree_bounds is not None:
+        d = int(degree_bounds[min(j, len(degree_bounds) - 1)])
+    else:
+        try:
+            d = g_init.degree(g_init.gens[j])
+        except IndexError:
+            d = g_init.degree(g_init.gens[j - 1])
 
     b: List[str] = [f"b_{k}" for k in range(v)]
     X_ = stringify(X)
@@ -893,7 +921,10 @@ def sum_check_steps(
     if not r and not skip:
         print_header("Initialization", out=out)
 
-        degs = [int(g_init.degree(gen)) for gen in g_init.gens]
+        if degree_bounds is not None:
+            degs = [int(b) for b in degree_bounds]
+        else:
+            degs = [int(g_init.degree(gen)) for gen in g_init.gens]
 
         if secret_mode is False or secret_mode is None: 
             out.print(f"\nLet\n\ng({X_}) = {g_init.as_expr()}.")
@@ -994,7 +1025,7 @@ def sum_check_steps(
                   f"{len(roots)}/{F.mod} = {len(roots)/F.mod:.10f}.")
             out.print(
                 f"\nIn general, by Schwartz-Zippel, this probability cannot exceed "
-                f"deg_{j}(g)/#F = {g_init.degree(X[j])}/{F.mod} = {g_init.degree(X[j])/F.mod:.10f}."
+                f"deg_{j}(g)/#F = {d}/{F.mod} = {d/F.mod:.10f}."
             )
             out.print(f"\nIn this event, V will ultimately accept the original false claim for the value of H.")
             out.print(
@@ -1018,16 +1049,42 @@ def sum_check_steps(
             out.print(f"\nWe are unable to suggest a polynomial satisfying (a) and (b)—perhaps no such polynomial exists.")
             out.print(f"\nIf no such polynomial exists, we've been caught in a lie and V will reject immediately.")
 
-        prompt = f"\nType 'cancel' to abort, or your g*_{j}({str(X[j])}): "
-        g_0_star = choose_polynomial_with_retries(
-            field=F,
-            custom_message=prompt,
-            preferred_order=[X[j]],        # force univariate gens
-            secret_mode_for_poly=False,
-            echo_back=False,
-            max_attempts=3,
-            out=out,
-        )
+        # The variable g_0_star currently holds the suggested cheating polynomial
+        # (or None if no suggestion could be constructed). Let the user accept the
+        # suggestion with 'y', type their own polynomial, or cancel.
+        suggestion = g_0_star
+        if suggestion is not None:
+            prompt = (
+                f"\nEnter 'y' to send the suggested polynomial, type your own "
+                f"g*_{j}({str(X[j])}), or type 'cancel' to abort: "
+            )
+        else:
+            prompt = f"\nType 'cancel' to abort, or your g*_{j}({str(X[j])}): "
+
+        g_0_star = None
+        max_attempts = 3
+        attempts = 0
+        while g_0_star is None and attempts < max_attempts:
+            attempts += 1
+            raw = out.input(prompt).strip()
+            if raw.lower() == "cancel":
+                out.print(f"\n{RED}Input cancelled. Aborting this run.{RESET}")
+                return None
+            if raw.lower() == "y" and suggestion is not None:
+                g_0_star = suggestion
+                break
+            try:
+                g_0_star = parse_poly(
+                    raw,
+                    field=F,
+                    gens=[X[j]],   # force univariate gens
+                    preferred_order=None,
+                    strict=True,
+                )
+            except Exception as e:
+                out.print(f"\nCould not parse polynomial: {e}")
+                if attempts < max_attempts:
+                    out.print(f"Try again ({attempts}/{max_attempts}).")
         if g_0_star is None:
             out.print(f"\n{RED}Input cancelled or invalid too many times. Aborting this run.{RESET}")
             return None   
