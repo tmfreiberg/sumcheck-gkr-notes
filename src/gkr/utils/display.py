@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from contextlib import contextmanager
-from dataclasses import dataclass
-from typing import Any, Callable, Optional
-
-from sympy.polys.domains.modularinteger import ModularInteger
-from sympy.core.symbol import Symbol
-
 import getpass
 import os
 import shutil
 import sys
+import threading
+import time
+from contextlib import contextmanager
+from dataclasses import dataclass
+from typing import Any, Callable, Optional, Protocol, Sequence
+
+from sympy.core.symbol import Symbol
+from sympy.polys.domains.modularinteger import ModularInteger
 
 from ._ansi import get_colors
 
@@ -28,9 +29,17 @@ PURPLE = _colors.PURPLE
 RESET = _colors.RESET
 
 
+def _stdin_is_tty() -> bool:
+    """True when stdin is an interactive terminal (i.e. a human is typing)."""
+    try:
+        return sys.stdin is not None and sys.stdin.isatty()
+    except Exception:
+        return False
+
+
 def _in_notebook() -> bool:
     try:
-        from IPython import get_ipython  # type: ignore
+        from IPython import get_ipython
         ip = get_ipython()
         return ip is not None and ip.__class__.__name__ == "ZMQInteractiveShell"
     except Exception:
@@ -41,8 +50,11 @@ def _in_notebook() -> bool:
 # Optional IPython helpers
 # ----------------------------
 
+ipy_display: Optional[Callable[..., Any]]
 try:
-    from IPython.display import display as ipy_display  # type: ignore
+    from IPython.display import display as _ipy_display
+
+    ipy_display = _ipy_display
 except Exception:
     ipy_display = None
 
@@ -58,8 +70,11 @@ def display(*args: Any) -> None:
                 print(arg)
 
 
+ipy_clear_output: Optional[Callable[..., Any]]
 try:
-    from IPython.display import clear_output as ipy_clear_output  # type: ignore
+    from IPython.display import clear_output as _ipy_clear_output
+
+    ipy_clear_output = _ipy_clear_output
 except Exception:
     ipy_clear_output = None
 
@@ -97,15 +112,15 @@ def set_widgets(enable: bool = True, disable: bool = False) -> None:
         return
 
     try:
-        from IPython import get_ipython  # type: ignore
+        from IPython import get_ipython
 
         if get_ipython() is None:
             widgets = None
             HTML = _stub_html
             return
 
-        from IPython.display import HTML as _HTML  # type: ignore
-        import ipywidgets as _widgets  # type: ignore
+        import ipywidgets as _widgets
+        from IPython.display import HTML as _HTML
 
         widgets = _widgets
         HTML = _HTML
@@ -118,7 +133,7 @@ def set_widgets(enable: bool = True, disable: bool = False) -> None:
 # Pretty-print helpers
 # ----------------------------
 
-def display_aligned(*strings: str, out: Optional["TerminalOutput"] = None) -> None:
+def display_aligned(*strings: str, out: Optional[SupportsPrint] = None) -> None:
     """
     Print strings containing '=' aligned on the '=' sign.
     If no string contains '=', prints all strings as-is.
@@ -138,7 +153,61 @@ def display_aligned(*strings: str, out: Optional["TerminalOutput"] = None) -> No
         printer(f"{left.strip():>{max_left_length}} = {right.strip()}")
 
 
-def print_header(title: str, level: int = 1, *, out: Optional["TerminalOutput"] = None) -> None:
+def _stdout_is_tty() -> bool:
+    """True when stdout is an interactive terminal (i.e. animation is safe)."""
+    try:
+        return sys.stdout is not None and sys.stdout.isatty()
+    except Exception:
+        return False
+
+
+@contextmanager
+def progress(message: str, *, out: Optional[SupportsPrint] = None,
+             frames: str = "|/-\\", interval: float = 0.1):
+    """Announce slow work, and show that something is happening.
+
+    Two different things, deliberately kept apart:
+
+    * the *message* is narration -- it tells the reader why nothing is
+      appearing -- so it goes through `out` like any other line, and appears
+      in captured transcripts;
+    * the *spinner* is presentation. It writes to sys.stdout directly, and only
+      when stdout is an interactive terminal and we are not in a notebook. A
+      piped run (the golden harness) or a notebook cell therefore sees exactly
+      the message and nothing else, which keeps transcripts byte-deterministic
+      -- an elapsed time or an animation frame in a golden would be a lie.
+    """
+    printer = out.print if out is not None else print
+    printer(message)
+
+    animate = _stdout_is_tty() and not _in_notebook()
+    stop = threading.Event()
+    thread: Optional[threading.Thread] = None
+
+    if animate:
+        def spin() -> None:
+            i = 0
+            while not stop.wait(interval):
+                sys.stdout.write(f"\r  {frames[i % len(frames)]} ")
+                sys.stdout.flush()
+                i += 1
+
+        thread = threading.Thread(target=spin, daemon=True)
+        thread.start()
+
+    started = time.perf_counter()
+    try:
+        yield
+    finally:
+        stop.set()
+        if thread is not None:
+            thread.join(timeout=1.0)
+            elapsed = time.perf_counter() - started
+            sys.stdout.write(f"\r  done in {elapsed:.1f}s\n")
+            sys.stdout.flush()
+
+
+def print_header(title: str, level: int = 1, *, out: Optional[SupportsPrint] = None) -> None:
     """
     Print a section header, using TerminalOutput paging if provided.
 
@@ -150,9 +219,13 @@ def print_header(title: str, level: int = 1, *, out: Optional["TerminalOutput"] 
     # Conservative line budgeting so we don't split headers across pages.
     min_lines = 5 if level == 1 else 2
 
-    if out is not None:
-        out.new_section(min_lines=min_lines)
-        with out.atomic():
+    # Paging is a TerminalOutput capability, not part of SupportsPrint: a
+    # SecretsChannel (a file) has no pages to break. Use it when present.
+    new_section = getattr(out, "new_section", None)
+    atomic = getattr(out, "atomic", None)
+    if new_section is not None and atomic is not None:
+        new_section(min_lines=min_lines)
+        with atomic():
             print_header_block(title, level=level, printer=printer)
     else:
         print_header_block(title, level=level, printer=printer)
@@ -173,7 +246,7 @@ def print_header_block(
     else:
         printer(f"\n{PINK}{t.upper()}{RESET}")
 
-def stringify(*args: Union[Tuple[Symbol], List[Union[str, int, 'ModularInteger']]]) -> str:
+def stringify(*args: Sequence[Any]) -> str:
     """
     Converts one or more coordinate tuples/lists into a single formatted string.
 
@@ -221,6 +294,18 @@ def to_string(c):
 # ----------------------------
 # TerminalOutput
 # ----------------------------
+
+class SupportsPrint(Protocol):
+    """Anywhere narration can be written.
+
+    The renderers need exactly one thing: print(). TerminalOutput satisfies this,
+    and so does gkr.protocol.secrets.SecretsChannel, which is deliberately NOT a
+    TerminalOutput -- it has no pager, strips colour, and its input() raises,
+    because prompts belong to the keyboard, not to a file being tailed.
+    """
+
+    def print(self, text: str = "") -> None: ...
+
 
 @dataclass
 class TerminalOutput:
@@ -271,11 +356,12 @@ class TerminalOutput:
 
         # Read a single keypress (Windows + Unix-ish, best effort)
         try:
-            if os.name == "nt":
-                import msvcrt  # type: ignore
+            if sys.platform == "win32":
+                import msvcrt
                 msvcrt.getch()
             else:
-                import termios, tty  # type: ignore
+                import termios
+                import tty
                 fd = sys.stdin.fileno()
                 old = termios.tcgetattr(fd)
                 try:
@@ -324,7 +410,25 @@ class TerminalOutput:
             sys.stdout.write(RESET)
             sys.stdout.flush()
 
-        if hidden:
+        # `hidden` exists to stop a live audience from reading what the user types
+        # (presentation/secret mode). That only makes sense when a human is typing
+        # at a terminal. When stdin is piped (tests, scripted demos), there is
+        # nothing to hide, and getpass is actively harmful:
+        #
+        #   - On Windows, getpass reads via msvcrt.getwch() from the CONSOLE and
+        #     writes the prompt via msvcrt.putwch(), so it ignores piped stdin
+        #     entirely: the prompt escapes capture and the script desynchronizes.
+        #   - On Unix, getpass falls back to reading stdin but emits a
+        #     GetPassWarning and keeps the prompt out of stdout.
+        #
+        # A notebook is the third case, and the one that matters most here: stdin
+        # is not a tty (ipykernel replaces it), but getpass IS the right call --
+        # IPython renders it as a masked box that reads from the frontend. Testing
+        # only for a tty meant secret mode silently echoed the prover's polynomial
+        # into the notebook, which is precisely what it exists to prevent.
+        #
+        # So: hide for a real terminal or a notebook; otherwise plain input().
+        if hidden and (_stdin_is_tty() or _in_notebook()):
             return getpass.getpass(prompt)
         return input(prompt)
 

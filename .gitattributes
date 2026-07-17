@@ -1,0 +1,1 @@
+tests/golden/transcripts/*.golden.txt -text

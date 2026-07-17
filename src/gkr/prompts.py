@@ -1,25 +1,24 @@
 from __future__ import annotations
 
-import re
 import random
+import re
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple, Union, Set
+from typing import Dict, List, Literal, Optional, Sequence, Set, Tuple, Union, overload
 
-from sympy import Poly, symbols, isprime
+from sympy import Poly, isprime, symbols
 from sympy.core.symbol import Symbol
-from sympy.polys.domains import GF
-from sympy.polys.domains import Domain
+from sympy.parsing.sympy_parser import (
+    convert_xor,
+    implicit_multiplication_application,
+    parse_expr,
+    standard_transformations,
+)
+from sympy.polys.domains import GF, Domain
 from sympy.polys.domains.finitefield import FiniteField
 from sympy.polys.domains.modularinteger import ModularInteger
 
-from sympy.parsing.sympy_parser import (
-    parse_expr,
-    standard_transformations,
-    implicit_multiplication_application,
-    convert_xor,
-)
-
-from .display import TerminalOutput, out as default_out
+from .utils.display import TerminalOutput
+from .utils.display import out as default_out
 
 __all__ = [
     # parsing / gens
@@ -40,11 +39,9 @@ __all__ = [
 ]
 
 
-
-# ============================================================
+# ----------------------------------------------------------------------------
 # Regexes + small data types
-# ============================================================
-
+# ----------------------------------------------------------------------------
 # Matches:
 #   X_0, X_{0}, X_12, X_{12}, X_neg1, X_neg12
 # Base is a single Roman letter to avoid matching e.g. "sin_0"
@@ -79,10 +76,9 @@ class IndexedVar:
             return f"{self.base}_neg{abs(self.index)}"
         return f"{self.base}_{self.index}"
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # String normalization (syntax sugar -> SymPy-friendly)
-# ============================================================
-    
+# ----------------------------------------------------------------------------
 def _normalize_subscripts(s: str) -> str:
     # X_{11} -> X_11 (fine)
     s = _POS_SUB_RE.sub(lambda m: f"{m.group('base')}_{m.group('idx')}", s)
@@ -111,10 +107,9 @@ def _normalize_poly_string(s: str) -> str:
     s = _normalize_subscripts(s)
     return s
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # Variable extraction + generator ordering (infer_gens)
-# ============================================================
-
+# ----------------------------------------------------------------------------
 def _extract_variable_names(
     poly_str: str,
     *,
@@ -217,10 +212,9 @@ def infer_gens(
         return list(symbols(["X_0"]))
     return list(symbols(sorted(multi) + sorted(single)))
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # Parsing (string -> Expr -> Poly)
-# ============================================================
-
+# ----------------------------------------------------------------------------
 def parse_poly(
     poly_str: str,
     *,
@@ -271,7 +265,7 @@ def parse_poly(
             raise ValueError(
                 f"Unexpected symbol(s): {extras}. Allowed symbols for this polynomial are: {pretty_allowed}."
             )
-        
+
     return Poly(expr, *gens, domain=field)
 
 def poly_to_string(poly: Poly) -> str:
@@ -306,7 +300,7 @@ def poly_to_string(poly: Poly) -> str:
     return " + ".join(pieces) if pieces else "0"
 
 def parse_poly_in_ring(poly_str: str, *, field: Domain, gens: Sequence[Symbol]) -> Poly:
-    # gens are fixed: the protocol’s ambient ring
+    # gens are fixed: the protocol's ambient ring
     return parse_poly(
         poly_str,
         field=field,
@@ -315,10 +309,9 @@ def parse_poly_in_ring(poly_str: str, *, field: Domain, gens: Sequence[Symbol]) 
         strict=True,            # reject unknown variables
     )
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # Poly coercion / alignment helpers
-# ============================================================
-
+# ----------------------------------------------------------------------------
 def coerce_poly_to_gens(poly: Poly, gens: Sequence[Symbol], field: Domain) -> Poly:
     # Rebuild the Poly from its expression in the desired generator set
     return Poly(poly.as_expr(), *gens, domain=field)
@@ -329,25 +322,38 @@ def align_two_polys(a: Poly, b: Poly, *, gens: Sequence[Symbol], field: Domain) 
         coerce_poly_to_gens(b, gens, field),
     )
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # Field selection + user prompting
-# ============================================================
-
+# ----------------------------------------------------------------------------
 def choose_prime_field(
     *,
     out: TerminalOutput = default_out,
-    prompt: str = "\nEnter a prime p:",
-) -> Domain:
-    p_str = out.input(prompt)
-    try:
-        p = int(p_str)
-    except ValueError:
-        raise ValueError("Invalid input: p must be an integer.")
+    prompt: str = "\nEnter a prime p (or 'cancel' to abort):",
+    max_attempts: int = 3,
+) -> Optional[Domain]:
+    """Prompt for a prime p and return GF(p).
 
-    if not isprime(p):
-        raise ValueError("Invalid input: p must be prime.")
-
-    return GF(p, symmetric=False)
+    Returns None if the user cancels or exhausts their attempts -- the same
+    contract as every other prompt in the package. (This used to raise on any
+    non-integer or non-prime input, so a typo at this prompt produced a
+    traceback: `gkr sumcheck` crashed while `gkr gkr` survived only because
+    its caller happened to wrap the call in its own retry loop.)
+    """
+    for attempt in range(1, max_attempts + 1):
+        raw = out.input(prompt)
+        if raw is None or raw.strip().lower() in {"cancel", "c"}:
+            return None
+        try:
+            p = int(raw)
+        except (TypeError, ValueError):
+            out.print("\nInvalid input: p must be an integer.")
+        else:
+            if isprime(p):
+                return GF(p, symmetric=False)
+            out.print("\nInvalid input: p must be prime.")
+        if attempt < max_attempts:
+            out.print(f"Try again ({attempt}/{max_attempts}).")
+    return None
 
 def choose_polynomial(
     field: Optional[Domain] = None,
@@ -370,6 +376,8 @@ def choose_polynomial(
     """
     if field is None:
         field = choose_prime_field(out=out)
+        if field is None:
+            return None      # cancelled at the prime prompt
 
     # Normalize to a prime field SymPy expects (your current restriction)
     if getattr(field, "mod", None) is None:
@@ -437,7 +445,7 @@ def choose_polynomial_with_retries(
         # Call parse directly so we can reuse your strong error messages
         try:
             # Important: we must force gens for univariate rounds (see below)
-            from gkr.utils.polynomials import parse_poly
+            from gkr.prompts import parse_poly
             poly = parse_poly(
                 s,
                 field=field,
@@ -459,10 +467,9 @@ def choose_polynomial_with_retries(
                 out.print("No more attempts.")
                 return None
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # Convenience: parse/choose inside a fixed ambient ring
-# ============================================================
-
+# ----------------------------------------------------------------------------
 def choose_polynomial_in_ring(
     *,
     field: Domain,
@@ -488,46 +495,42 @@ def choose_polynomial_in_ring(
 
     return poly
 
-# ============================================================
+# ----------------------------------------------------------------------------
 # Field element input
-# ============================================================
-
+# ----------------------------------------------------------------------------
 def input_random_field_element(
     custom_message: Union[None, str] = None,
     max_attempts: Optional[int] = None,
     *,
     out: TerminalOutput = default_out,
 ) -> Optional[int]:
-    """
-    Backwards-compatible input routine.
-
-    Returns:
-      - int on success
-      - None on cancel or too many failed attempts
-    """
-    attempts = 0 if max_attempts is not None else None
+    """Prompt for an integer. Returns the int, or None on cancel ('c') or after
+    max_attempts invalid entries (unlimited retries when max_attempts is None)."""
+    if max_attempts is not None and max_attempts <= 0:
+        return None
+    attempts = 0
     prompt = (
         custom_message
         if custom_message is not None
         else "\nEnter c to cancel or select element uniformly at random from field, independent of any previous selection:"
     )
 
-    while attempts is None or (attempts != max_attempts):
+    while True:
         response = out.input(prompt).strip()
         if response.lower() == "c":
             return None
         try:
             return int(response)
         except ValueError:
-            if attempts is not None:
-                attempts += 1
-                if attempts == max_attempts:
-                    out.print("\nInvalid input. No more attempts.")
-                    return None
-                elif attempts == max_attempts - 1:
-                    prompt = "\nInvalid input. Final attempt: enter an integer, or c to cancel:"
-                else:
-                    prompt = "\nInvalid input. Enter an integer, or c to cancel:"
+            if max_attempts is None:
+                prompt = "\nInvalid input. Enter an integer, or c to cancel:"
+                continue
+            attempts += 1
+            if attempts == max_attempts:
+                out.print("\nInvalid input. No more attempts.")
+                return None
+            elif attempts == max_attempts - 1:
+                prompt = "\nInvalid input. Final attempt: enter an integer, or c to cancel:"
             else:
                 prompt = "\nInvalid input. Enter an integer, or c to cancel:"
 
@@ -549,6 +552,28 @@ def _coerce_to_field_element(
     return field(int(value))
 
 
+@overload
+def random_field_element(
+    field: FiniteField,
+    user_input: Literal[False] = ...,
+    custom_message: Union[None, str] = ...,
+    max_attempts: Optional[int] = ...,
+    *,
+    out: TerminalOutput = ...,
+) -> ModularInteger: ...
+
+
+@overload
+def random_field_element(
+    field: FiniteField,
+    user_input: Literal[True],
+    custom_message: Union[None, str] = ...,
+    max_attempts: Optional[int] = ...,
+    *,
+    out: TerminalOutput = ...,
+) -> Optional[ModularInteger]: ...
+
+
 def random_field_element(
     field: FiniteField,
     user_input: bool = False,
@@ -557,12 +582,10 @@ def random_field_element(
     *,
     out: TerminalOutput = default_out,
 ) -> Optional[ModularInteger]:
-    """
-    Backwards-compatible field element picker.
-
-    - If user_input=False: returns a random element of GF(p)
-    - If user_input=True: prompts user; allows cancel ('c') -> None
-    """
+    """A field element, either sampled uniformly (user_input=False -- cannot
+    fail) or typed by the user (user_input=True -- None on cancel or after too
+    many invalid entries). The overloads let callers on the sampling path drop
+    the None case."""
     if user_input:
         user_response = input_random_field_element(
             custom_message=custom_message,

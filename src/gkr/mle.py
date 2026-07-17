@@ -1,28 +1,29 @@
-from typing import Optional, Union, List, Dict, Tuple, Callable, Sequence, Any
-from .utils import (
-    stringify,
-    RED, GREEN, YELLOW, BLUE, RESET,
-    TerminalOutput,
-    out,
-)
+"""
+Multilinear extensions.
 
-from .utils.polynomials import (
-    choose_prime_field,
-)
+Pure mathematics: no printing, no prompts, nothing interactive. Every function
+here takes its inputs as arguments and returns a value.
+
+The multilinear extension of f : {0,1}^v -> F is the unique multilinear
+polynomial agreeing with f on the hypercube; this module builds it two ways
+(via the beta/equality polynomial, and via a Lagrange basis) so the notebooks
+can show they agree.
+
+The worked example that used to live here -- 147 lines of prompts and
+narration, which is a different job -- is now in gkr.examples.
+"""
+from itertools import product
+from typing import Callable, List, Tuple, Union
 
 import numpy as np
-from itertools import product
-from sympy import symbols, Poly, isprime
-from sympy.polys.domains import GF
-from sympy.polys.domains.modularinteger import ModularInteger
-from sympy.polys.domains.finitefield import FiniteField
+from sympy import Poly, isprime, symbols
 from sympy.core.numbers import Integer
 from sympy.core.symbol import Symbol
+from sympy.polys.domains import GF
+from sympy.polys.domains.finitefield import FiniteField
+from sympy.polys.domains.modularinteger import ModularInteger
 
 
-"""
-CONSTRUCTING MLE
-"""
 def tilde_beta_poly(
         field: FiniteField,
         v: int,
@@ -58,9 +59,9 @@ def tilde_beta_poly(
 
     # Default values for X and Y if not provided
     if X is None:
-        X: Tuple[Symbol, ...] = symbols(f"x_:{v}")
+        X = symbols(f"x_:{v}")
     if Y is None:
-        Y: Tuple[Symbol, ...] = symbols(f"y_:{v}")
+        Y = symbols(f"y_:{v}")
 
     # Generate the arrays of polynomials for x and y variables
     XY = X + Y
@@ -97,15 +98,15 @@ def multilinear_extension(
 
     if v == 0:
         # Degenerate case: return a constant polynomial
-        b = ()
+        b: Tuple[int, ...] = ()
         fb = field(func(b))
         # Introduce a dummy variable x_0
         X = symbols(f"x_:{v+1}")
         return Poly(fb, X, domain=field)
     else:
         # Create symbols for the x and y variables
-        X: Tuple[Symbol, ...] = symbols(f"x_:{v}")
-        Y: Tuple[Symbol, ...] = symbols(f"y_:{v}")
+        X = symbols(f"x_:{v}")
+        Y = symbols(f"y_:{v}")
 
         # Compute the tilde_beta polynomial
         tilde_beta = tilde_beta_poly(field=field, v=v, X=X, Y=Y)
@@ -129,9 +130,6 @@ def multilinear_extension(
         return tilde_f
 
 
-"""
-START ALTERNATE APPROACH TO CONSTRUCTING MLE (MORE OR LESS EQUIVALENT TO ABOVE)
-"""
 # Create Lagrange basis polynomials for two points, 0 and 1
 def lagrange_basis(v: int,
                    field: FiniteField) -> List[Tuple[Poly, Poly]]:
@@ -150,9 +148,15 @@ def lagrange_basis(v: int,
 def multilinear_extension_using_lagrange_basis(
         field: FiniteField,
         v: int,
-        func: Callable[[Sequence[Union[int, Integer, ModularInteger]]], Union[int, Integer, ModularInteger]],
+        func: Callable[[Tuple[int, ...]], Union[int, Integer, ModularInteger]],
 ) -> Poly:
-    """Creates the multilinear extension of a function on the Boolean hypercube {0,1}^v."""
+    """The multilinear extension of a function on {0,1}^v, built from the
+    Lagrange basis rather than from the beta polynomial.
+
+    Same interface and same answer as multilinear_extension: the two agree
+    because the multilinear extension is unique. Building it both ways is how
+    you see that.
+    """
 
     # Set the field with non-negative representatives
     field = GF(field.mod, symmetric=False)
@@ -171,8 +175,10 @@ def multilinear_extension_using_lagrange_basis(
         # Compute func(binary_vector) for current binary input
         f_val = field(func(binary_vector))
 
-        # Compute the product of Lagrange basis polynomials at `point`
-        term = Poly(f_val, X, domain=field)
+        # Compute the product of Lagrange basis polynomials at `point`.
+        # int(f_val): Poly rejects a ModularInteger as its constant term
+        # ("not iterable"), but takes the plain integer and the domain.
+        term = Poly(int(f_val), X, domain=field)
         for i in range(v):
             term *= basis[i][binary_vector[i]]
 
@@ -181,160 +187,6 @@ def multilinear_extension_using_lagrange_basis(
 
     return tilde_f
 
-"""
-END ALTERNATE APPROACH TO CONSTRUCTING MLE
-"""
-
-"""
-CREATE EXAMPLES
-"""
-
-def multilinear_extension_example(
-    show_result: bool = True,
-    compare: bool = False,
-    *,
-    out: TerminalOutput = out,
-) -> Optional[Tuple[List[Poly], List[np.ndarray]]]:
-    """
-    Interactive demo: build MLEs of functions f : {0,1}^v -> GF(p).
-
-    - EXAMPLE 1 and 2 are fixed defaults over GF(11), v=2.
-    - After that, user can add more examples interactively.
-    - If compare=True, compares consecutive examples when p and v match.
-    """
-    mle: List[Poly] = []
-    grid: List[np.ndarray] = []
-    pee: List[int] = []
-    vee: List[int] = []
-
-    loop_counter: int = 0
-
-    while True:
-        # ----------------------------
-        # Choose (p, v) for this example
-        # ----------------------------
-        if loop_counter in {0, 1}:
-            p = 11
-            v = 2
-            out.print(f"\n{BLUE}EXAMPLE {loop_counter + 1}.{RESET}")
-        else:
-            out.print(f"\n{BLUE}EXAMPLE {loop_counter + 1}.{RESET}")
-            field = choose_prime_field(out=out, prompt="Enter a prime p (we will work over GF(p)): ")
-            p = int(field.mod)
-            if not isprime(p):
-                out.print(f"{RED}Invalid input: p must be prime.{RESET}")
-                continue
-
-            v = int(out.input("Enter a positive integer v (we extend f : {0,1}^v -> GF(p)): ").strip())
-            if v <= 0:
-                out.print(f"{RED}Invalid input: v must be a positive integer.{RESET}")
-                continue
-
-        pee.append(p)
-        vee.append(v)
-
-        field = GF(p, symmetric=False)
-
-        # nicer formatting than **v
-        out.print(f"\nWe extend a function f : {{0,1}}^{v} -> {field} to a function f̃ : {field}^{v} -> {field}.\n")
-
-        # ----------------------------
-        # Collect function values on {0,1}^v
-        # ----------------------------
-        func_values: Dict[Tuple[int, ...], Any] = {}
-
-        if loop_counter == 0:
-            func_values[(0, 0)] = field(1); out.print("The function value for input (0, 0) is: 1")
-            func_values[(0, 1)] = field(2); out.print("The function value for input (0, 1) is: 2")
-            func_values[(1, 0)] = field(3); out.print("The function value for input (1, 0) is: 3")
-            func_values[(1, 1)] = field(4); out.print("The function value for input (1, 1) is: 4")
-
-        elif loop_counter == 1:
-            # Slightly different second default so the compare demo is interesting
-            func_values[(0, 0)] = field(1); out.print("The function value for input (0, 0) is: 1")
-            func_values[(0, 1)] = field(2); out.print("The function value for input (0, 1) is: 2")
-            func_values[(1, 0)] = field(3); out.print("The function value for input (1, 0) is: 3")
-            func_values[(1, 1)] = field(3); out.print("The function value for input (1, 1) is: 3")
-
-        else:
-            for bitstring in product([0, 1], repeat=v):
-                user_input = out.input(f"Enter the function value for input {bitstring}: ").strip()
-                try:
-                    user_value = int(user_input)
-                except ValueError:
-                    out.print(f"{RED}Invalid input: function values must be integers.{RESET}")
-                    break
-                func_values[bitstring] = field(user_value)
-            else:
-                # only runs if the for-loop did NOT break
-                pass
-            # If the loop broke, restart this example without incrementing loop_counter
-            if len(func_values) != 2**v:
-                continue
-
-        def explicit_function(inputs: Tuple[int, ...]):
-            return func_values[inputs]
-
-        # ----------------------------
-        # Compute MLE and (optionally) show grid
-        # ----------------------------
-        extended_func = multilinear_extension(field=field, v=v, func=explicit_function)
-        mle.append(extended_func)
-
-        eval_array = evaluation_array(polynomial=extended_func)
-        grid.append(eval_array)
-
-        if show_result:
-            X_str: str = stringify(symbols(f"x_:{v}"))
-            out.print(f"\nThe multilinear extension of this function is:\n\n{YELLOW}f̃({X_str}) = {extended_func.as_expr()}{RESET}")
-
-        if show_result and v <= 2 and p < 50:
-            out.print(f"\nIn the following array, entry (i,j) is f̃(i,j):\n")
-            out.print(eval_array)
-
-        # ----------------------------
-        # Compare consecutive examples if requested and compatible
-        # ----------------------------
-        if compare and len(mle) >= 2:
-            if pee[-1] == pee[-2] and vee[-1] == vee[-2]:
-                p_cmp = pee[-1]
-                v_cmp = vee[-1]
-
-                out.print(f"\nThe multilinear extension of the first function "
-                      f"({BLUE}EXAMPLE {loop_counter}{RESET}) is: {YELLOW}{mle[-2].as_expr()}{RESET}.")
-                out.print(f"\nThe multilinear extension of the second function "
-                      f"({BLUE}EXAMPLE {loop_counter + 1}{RESET}) is: {YELLOW}{mle[-1].as_expr()}{RESET}.")
-                out.print(f"\nThe multilinear extensions can agree on at most {v_cmp * p_cmp**(v_cmp - 1)} "
-                      f"out of {p_cmp**v_cmp} points.")
-
-                if v_cmp <= 2 and p_cmp < 50:
-                    agree = (grid[-2] == grid[-1]).sum()
-                    out.print(f"\nIndeed, they agree on {GREEN}{agree} points{RESET}, as shown below.\n")
-
-                    tuple_array = np.empty(grid[-2].shape, dtype=object)
-                    for index, _ in np.ndenumerate(grid[-2]):
-                        tuple_array[index] = (int(grid[-2][index]), int(grid[-1][index]))
-
-                    for i in range(tuple_array.shape[0]):
-                        row_parts = []
-                        for j in range(tuple_array.shape[1]):
-                            a, b = tuple_array[i, j]
-                            if a == b:
-                                row_parts.append(f"{GREEN}{(a, b)}{RESET}")
-                            else:
-                                row_parts.append(f"{RED}{(a, b)}{RESET}")
-                        out.print(" ".join(row_parts))
-            else:
-                out.print(f"\n{YELLOW}Compare skipped: last two examples used different (p, v).{RESET}")
-
-        # ----------------------------
-        # Prompt to continue (ALWAYS reachable)
-        # ----------------------------
-        again = out.input("\nAnother example? (y/n) ").strip().lower()
-        loop_counter += 1
-        if again != "y":
-            break       
-    return mle, grid
 
 def evaluation_array(polynomial: Poly) -> np.ndarray:
     """

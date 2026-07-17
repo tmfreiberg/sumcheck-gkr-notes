@@ -1,0 +1,271 @@
+[0m
+Do you want this to be interactive? (y/n): [0mDo you want to act as prover? (y/n): [0mDo you want to act as verifier? (y/n): [0m
+Enter a prime p (or 'cancel' to abort):[0m
+Enter your polynomial over GF(331) (examples: 2*X_0^2 + X_0 X_1, x*y + z, X_11 + 3):
+Interpreted as a polynomial in: (x, y, z)
+Normalized polynomial: x*y + z^2
+
+[35m==============[0m
+[35mINITIALIZATION[0m
+[35m==============[0m
+
+Let
+
+g(x, y, z) = x*y + z**2.
+
+[33mWe display g for the reader. In the protocol, V does not receive g explicitly;[0m [33mV only has oracle/committed evaluation access to g.[0m
+
+For soundness, V relies on degree bounds per variable (this is public information): [1, 1, 2].
+
+Let
+
+H := sum g(b_0, b_1, b_2) over (b_0, b_1, b_2) in {0,1}^3.
+
+The true value is H = 6.
+[0m
+As prover, enter your claim H* for the value of H: 
+[35m=======[0m
+[35mROUND 0[0m
+[35m=======[0m
+
+Let
+
+g_0(x) := sum g(x, b_1, b_2) over (b_1, b_2) in {0,1}^2
+
+[31m=== START INVISIBLE TO VERIFIER ===[0m
+
+In fact, 
+
+[32mg_0(x) = 2*x + 2[0m.
+
+Your goal is to convince V that the polynomial g*_0 you're about to send is g_0 (a false claim).
+
+V will check that:
+
+(a) deg(g*_0) ≤ deg_0(g) = 1
+
+(b) g*_0(0) + g*_0(1) = 5
+
+If it turns out that
+
+(c) g*_0(r_0) = g_0(r_0),
+
+where r_0 is the random element of GF(331) that V will sample next,
+
+then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+
+As you don't know what r_0 will be, the best you can do is choose g*_0 satisfying (a) and (b) such that
+
+(d) g*_0 - g_0 has as many roots as possible in GF(331) (there can be at most deg(g*_0 - g_0) ≤ 1).
+
+For example, if[31m
+
+g*_0(x) = 330*x + 3[0m,
+
+then (a) and (b) hold, and the roots (in GF(331)) of g*_0 - g_0 are: [33m221[0m.
+
+The probability of V sampling one of these roots as the next challenge is 1/331 = 0.0030211480.
+
+In general, by Schwartz-Zippel, this probability cannot exceed deg_0(g)/#F = 1/331 = 0.0030211480.
+
+In this event, V will ultimately accept the original false claim for the value of H.
+
+Even if this does not happen, as long as (a) and (b) hold, V will accept in this round and we will have another chance to pull off the deception.
+[0m
+Enter 'y' to send the suggested polynomial, type your own g*_0(x), or type 'cancel' to abort: 
+[31m=== END INVISIBLE TO VERIFIER ===[0m
+
+P claims that g_0(x) = g*_0(x), where 
+
+g*_0(x) = 330*x + 3.
+
+If P's last two claims are true, then deg(g*_0) ≤ deg_0(g) and H* = g*_0(0) + g*_0(1).
+
+V checks the degree bound: deg(g*_0) = 1 ≤ deg_0(g) = 1.
+
+P's claim is that H = H* = 5. V proceeds to compute:
+
+g*_0(0) + g*_0(1) = 5
+
+This is easy because g*_0 is given explicitly, so V can evaluate it at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(331); here r_0 = 15.
+
+[35m=======[0m
+[35mROUND 1[0m
+[35m=======[0m
+
+Let
+
+g_1(y) := sum g(15, y, b_2) over (b_2) in {0,1}^1
+
+[31m=== START INVISIBLE TO VERIFIER ===[0m
+
+In fact, 
+
+[32mg_1(y) = 30*y + 1[0m.
+
+Your goal is to convince V that the polynomial g*_1 you're about to send is g_1 (a false claim).
+
+V will check that:
+
+(a) deg(g*_1) ≤ deg_1(g) = 1
+
+(b) g*_1(0) + g*_1(1) = 319
+
+If it turns out that
+
+(c) g*_1(r_1) = g_1(r_1),
+
+where r_1 is the random element of GF(331) that V will sample next,
+
+then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+
+As you don't know what r_1 will be, the best you can do is choose g*_1 satisfying (a) and (b) such that
+
+(d) g*_1 - g_1 has as many roots as possible in GF(331) (there can be at most deg(g*_1 - g_1) ≤ 1).
+
+For example, if[31m
+
+g*_1(y) = 315*y + 2[0m,
+
+then (a) and (b) hold, and the roots (in GF(331)) of g*_1 - g_1 are: [33m36[0m.
+
+The probability of V sampling one of these roots as the next challenge is 1/331 = 0.0030211480.
+
+In general, by Schwartz-Zippel, this probability cannot exceed deg_1(g)/#F = 1/331 = 0.0030211480.
+
+In this event, V will ultimately accept the original false claim for the value of H.
+
+Even if this does not happen, as long as (a) and (b) hold, V will accept in this round and we will have another chance to pull off the deception.
+[0m
+Enter 'y' to send the suggested polynomial, type your own g*_1(y), or type 'cancel' to abort: 
+[31m=== END INVISIBLE TO VERIFIER ===[0m
+
+P claims that g_1(y) = g*_1(y), where 
+
+g*_1(y) = 315*y + 2.
+
+If P's last two claims are true, then deg(g*_1) ≤ deg_1(g) and g*_0(15) = g*_1(0) + g*_1(1).
+
+V checks the degree bound: deg(g*_1) = 1 ≤ deg_1(g) = 1.
+
+V proceeds to compute:
+
+         g*_0(15) = 319
+g*_1(0) + g*_1(1) = 319
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(331); here r_1 = 140.
+
+[35m=======[0m
+[35mROUND 2[0m
+[35m=======[0m
+
+Let
+
+g_2(z) := g(15, 140, z)
+
+[31m=== START INVISIBLE TO VERIFIER ===[0m
+
+In fact, 
+
+[32mg_2(z) = z**2 + 114[0m.
+
+Your goal is to convince V that the polynomial g*_2 you're about to send is g_2 (a false claim).
+
+V will check that:
+
+(a) deg(g*_2) ≤ deg_2(g) = 2
+
+(b) g*_2(0) + g*_2(1) = 79
+
+If it turns out that
+
+(c) g*_2(r_2) = g_2(r_2),
+
+where r_2 is the random element of GF(331) that V will sample next,
+
+then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+
+As you don't know what r_2 will be, the best you can do is choose g*_2 satisfying (a) and (b) such that
+
+(d) g*_2 - g_2 has as many roots as possible in GF(331) (there can be at most deg(g*_2 - g_2) ≤ 2).
+
+For example, if[31m
+
+g*_2(z) = 2*z**2 + 180*z + 114[0m,
+
+then (a) and (b) hold, and the roots (in GF(331)) of g*_2 - g_2 are: [33m0[0m, [33m151[0m.
+
+The probability of V sampling one of these roots as the next challenge is 2/331 = 0.0060422961.
+
+In general, by Schwartz-Zippel, this probability cannot exceed deg_2(g)/#F = 2/331 = 0.0060422961.
+
+In this event, V will ultimately accept the original false claim for the value of H.
+
+Even if this does not happen, as long as (a) and (b) hold, V will accept in this round and we will have another chance to pull off the deception.
+[0m
+Enter 'y' to send the suggested polynomial, type your own g*_2(z), or type 'cancel' to abort: 
+[31m=== END INVISIBLE TO VERIFIER ===[0m
+
+P claims that g_2(z) = g*_2(z), where 
+
+g*_2(z) = 2*z**2 + 180*z + 114.
+
+If P's last two claims are true, then deg(g*_2) ≤ deg_2(g) and g*_1(140) = g*_2(0) + g*_2(1).
+
+V checks the degree bound: deg(g*_2) = 2 ≤ deg_2(g) = 2.
+
+V proceeds to compute:
+
+        g*_1(140) = 79
+g*_2(0) + g*_2(1) = 79
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+[35mFINAL CHECK[0m
+
+V samples an element uniformly at random from GF(331); here r_2 = 9.
+
+If all of P's claims are true, then
+
+g*_2(9) = g(15, 140, 9).
+
+V computes
+
+g*_2(9) = 241.
+
+Finally, V queries an oracle for g at r to obtain
+
+g(15, 140, 9) = 195.
+
+P fails the final verification, and V [31mREJECTS[0m P's initial claim that H = H*.
+
+[33mInterpretation: P can often keep the transcript locally consistent round-by-round, but the final random evaluation ties the transcript to the true g and typically catches a lie.
+[0m
+
+[35m============[0m
+[35mGROUND TRUTH[0m
+[35m============[0m
+
+True polynomial g:
+
+g(x, y, z) = x*y + z**2
+
+True value of H := sum g(b) over b in {0,1}^3 is: 6
+
+Prover claimed that this is equal to: H* = 5.
+
+Outcome: V [31mREJECTED[0m.
+[32m
+This was a TRUE NEGATIVE[0m: V rejected a false claim.
+
+RETURN VALUE: False

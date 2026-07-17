@@ -1,0 +1,173 @@
+[0m
+Do you want this to be interactive? (y/n): [0mDo you want to act as prover? (y/n): [0mDo you want to act as verifier? (y/n): [0m
+Enter a prime p (or 'cancel' to abort):
+Enter your arithmetic circuit over GF(331) as one or more expressions separated by ';' (each expression is one output gate).
+
+Use integer constants and the binary operators + and *. Keep expressions fairly simple: the circuit must be strictly layered (every path from an output to an input has the same length), and layer sizes that are powers of two are safest.
+
+For example, '5*4 + 3' is not strictly layered (the input 3 sits one layer too high), but '5*4 + (3 + 0)' is.
+[0m
+Enter your circuit (or press Enter for the default '(3*2) + (4 + 1)'; type 'cancel' to abort): 
+Building the circuit, its wiring predicates, and their multilinear extensions. For larger circuits this can take a minute...
+
+[35m==============[0m
+[35mINITIALIZATION[0m
+[35m==============[0m
+
+The arithmetic circuit C is defined over GF(331) and has depth 2.
+
+Layer sizes: S_0 = 1, S_1 = 2, S_2 = 4.
+
+Gate-label bit-lengths: s_0 = 0, s_1 = 1, s_2 = 2.
+
+(Layer 0 holds the output gate(s); layer 2 holds the inputs.)
+
+(Running in a terminal: to render the circuit, call the .view() method of your ArithmeticCircuit, e.g. ArithmeticCircuit(...).view().)
+
+Public information: the circuit topology -- and hence the wiring predicates add_i, mult_i and their multilinear extensions add̃_i, mult̃_i, which V can evaluate anywhere -- together with the inputs:
+
+W_2(0, 0) = 3, W_2(0, 1) = 2, W_2(1, 0) = 4, W_2(1, 1) = 1.
+
+In particular, V can compute W̃_2 directly. What V does NOT know (and does not want to compute) are the interior gate values and the output(s): verifying a claim about the output(s), without re-executing C, is the whole point of the protocol.
+
+[33mWe display the true output(s) for the reader. In the protocol, V does not know these:[0m
+
+W_0() = 11.
+
+[35m=================[0m
+[35mCLAIMED OUTPUT(S)[0m
+[35m=================[0m
+
+The true value of W_0() is 11.
+[0m
+As prover, enter your claim for output gate W_0(): 
+P claims that the circuit output(s) are:
+
+W*_0() = 10.
+
+[31mIn this run, P's claimed output(s) are intentionally false, and P will try to get away with it.[0m
+
+V forms the multilinear extension W̃*_0 of the claimed outputs.
+
+If P's claims are correct, then W̃*_0 = W̃_0 (multilinear extensions are unique); otherwise W̃*_0 ≠ W̃_0.
+
+Here s_0 = 0 (a single output gate), so ρ_0 := () and the point-claim is simply the output claim itself.
+
+V computes α_0 := W̃*_0(ρ_0) = 10. The claim to be verified is now a single point-claim:
+
+W̃_0(ρ_0) = α_0 = 10.
+
+[33mSince the claimed output is false and s_0 = 0, the point-claim is false with certainty: α_0 ≠ W̃_0(ρ_0).[0m
+
+[35m==========================[0m
+[35mGKR LAYER 0 → 1: SUM-CHECK[0m
+[35m==========================[0m
+
+At the start of this layer, V holds ρ_0 = () and the carried claim α_0 = 10 (the claim being that W̃_0(ρ_0) = α_0).
+
+By Thaler's identity,
+
+W̃_0(ρ_0) = sum g(x_0, y_0) over (x_0, y_0) in {0,1}^2,
+
+where
+
+g(x_0, y_0) := add̃_0(ρ_0, x_0, y_0)·[W̃_1(x_0) + W̃_1(y_0)] + mult̃_0(ρ_0, x_0, y_0)·[W̃_1(x_0)·W̃_1(y_0)].
+
+V can evaluate add̃_0 and mult̃_0 anywhere (the wiring is public), but NOT W̃_1, so V cannot evaluate g pointwise. So we run the sum-check protocol on g, with claimed sum H* := α_0 = 10, deferring the evaluation of g.
+
+For soundness, V relies on degree bounds per variable (this is public information): [2, 2]. (Each variable has degree ≤ 1 in the wiring MLE and ≤ 1 in W̃_1, hence degree ≤ 2 in g.)
+
+[33mWe display g for the reader. In the protocol, V cannot compute g (it involves W̃_1):[0m
+
+g(x_0, y_0) = x_0**2*y_0 + x_0*y_0**2 + 318*x_0*y_0 + 330*y_0**2 + 12*y_0.
+
+[31mThe carried claim is false: in fact W̃_0(ρ_0) = 11 ≠ 10 = α_0. To survive this sum-check, P is forced to forge round polynomials.[0m
+
+[35m=======[0m
+[35mROUND 0[0m
+[35m=======[0m
+
+Let
+
+g_0(x_0) := sum g(x_0, b_1) over (b_1) in {0,1}^1
+
+[31m=== START INVISIBLE TO VERIFIER ===[0m
+
+In fact, 
+
+[32mg_0(x_0) = x_0**2 + 319*x_0 + 11[0m.
+
+Your goal is to convince V that the polynomial g*_0 you're about to send is g_0 (a false claim).
+
+V will check that:
+
+(a) deg(g*_0) ≤ deg_0(g) = 2
+
+(b) g*_0(0) + g*_0(1) = 10
+
+If it turns out that
+
+(c) g*_0(r_0) = g_0(r_0),
+
+where r_0 is the random element of GF(331) that V will sample next,
+
+then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+
+As you don't know what r_0 will be, the best you can do is choose g*_0 satisfying (a) and (b) such that
+
+(d) g*_0 - g_0 has as many roots as possible in GF(331) (there can be at most deg(g*_0 - g_0) ≤ 2).
+
+For example, if[31m
+
+g*_0(x_0) = 2*x_0**2 + 317*x_0 + 11[0m,
+
+then (a) and (b) hold, and the roots (in GF(331)) of g*_0 - g_0 are: [33m0[0m, [33m2[0m.
+
+The probability of V sampling one of these roots as the next challenge is 2/331 = 0.0060422961.
+
+In general, by Schwartz-Zippel, this probability cannot exceed deg_0(g)/#F = 2/331 = 0.0060422961.
+
+In this event, V will ultimately accept the original false claim for the value of H.
+
+Even if this does not happen, as long as (a) and (b) hold, V will accept in this round and we will have another chance to pull off the deception.
+[0m
+Enter 'y' to send the suggested polynomial, type your own g*_0(x_0), or type 'cancel' to abort: 
+[31m=== END INVISIBLE TO VERIFIER ===[0m
+
+P claims that g_0(x_0) = g*_0(x_0), where 
+
+g*_0(x_0) = 7*x_0 + 1.
+
+If P's last two claims are true, then deg(g*_0) ≤ deg_0(g) and H* = g*_0(0) + g*_0(1).
+
+V checks the degree bound: deg(g*_0) = 1 ≤ deg_0(g) = 2.
+
+P's claim is that H = H* = 10. V proceeds to compute:
+
+g*_0(0) + g*_0(1) = 9
+
+This is easy because g*_0 is given explicitly, so V can evaluate it at 0 and 1.
+
+V [31mREJECTS[0m upon exposing an inconsistency in P's claims. The protocol terminates.
+
+[31mProtocol failed during the layer 0 sum-check.[0m
+
+[35m============[0m
+[35mGROUND TRUTH[0m
+[35m============[0m
+
+True circuit output(s):
+
+W_0() = 11.
+
+Prover claimed:
+
+W*_0() = 10.
+
+[33mLayer 0: V rejected during the sum-check.[0m
+
+Outcome: V [31mREJECTED[0m.
+[32m
+This was a TRUE NEGATIVE[0m: V rejected false claimed output(s).
+
+RETURN VALUE: False

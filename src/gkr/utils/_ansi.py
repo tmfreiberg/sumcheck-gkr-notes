@@ -4,9 +4,10 @@ import os
 import sys
 from dataclasses import dataclass
 
+
 def _in_jupyter() -> bool:
     try:
-        from IPython import get_ipython  # type: ignore
+        from IPython import get_ipython
         ip = get_ipython()
         return ip is not None and getattr(ip, "kernel", None) is not None
     except Exception:
@@ -36,7 +37,7 @@ def _try_enable_colorama() -> bool:
     if _windows_supports_ansi_natively():
         return True
     try:
-        import colorama  # type: ignore
+        import colorama
         colorama.just_fix_windows_console()
         return True
     except Exception:
@@ -81,4 +82,3 @@ class NoAnsi:
 
 def get_colors():
     return Ansi() if supports_color() else NoAnsi()
-

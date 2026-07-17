@@ -11,8 +11,6 @@ requires-python = ">=3.10"
 dependencies = [
   "sympy>=1.12",
   "numpy>=1.24",
-  "pandas>=2.0",
-  "matplotlib>=3.7",
 
   # Visualization is core
   "graphviz>=0.20",
@@ -29,10 +27,52 @@ notebook = [
 ]
 
 [project.scripts]
-zknotes = "gkr._cli:main"
+gkr = "gkr._cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error::DeprecationWarning",
+    # pydot calls pyparsing's deprecated setParseAction/setResultsName aliases.
+    # Third-party, fires on every circuit parse, and nothing we can fix here.
+    "ignore::pyparsing.warnings.PyparsingDeprecationWarning",
+]
+
+
+[tool.ruff]
+# The f-strings in the renderers must stay parseable by the version we claim to
+# support: reusing the outer quote inside an f-string is PEP 701, i.e. 3.12+,
+# and pyproject says >=3.10. ruff is what noticed the claim had become a lie.
+target-version = "py310"
+line-length = 120
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+# The defaults (E4/E7/E9/F) plus import hygiene. Deliberately NOT the whole
+# catalogue: this is a pedagogical codebase, and rules that fight exposition
+# (long narration strings, one-letter mathematical names in formulae) cost more
+# than they pay.
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# The front door resolves lazily (PEP 562), so its names are re-exports.
+"src/gkr/__init__.py" = ["F401"]
+"src/gkr/utils/__init__.py" = ["F401"]
+"src/gkr/protocol/__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true   # sympy, networkx, graphviz, pydot ship no stubs
+# There are currently no `type: ignore` comments in the codebase: platform- and
+# optional-dependency branches are handled structurally instead. mypy narrows on
+# sys.platform (it does NOT understand os.name), and optional imports declare
+# the name's type before the try/except so both assignments type-check. Keep it
+# that way -- an ignore for a platform branch is "unused" on the platform where
+# the code works, so it makes mypy's verdict depend on where it runs.
+warn_unused_ignores = true
+exclude = ["notebooks/"]

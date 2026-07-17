@@ -1,0 +1,499 @@
+[0m
+Do you want this to be interactive? (y/n): 
+Although you've selected non-interative mode, responses to a few prompts are still required...
+[0m
+Enter a prime p (or 'cancel' to abort):
+Enter your arithmetic circuit over GF(101) as one or more expressions separated by ';' (each expression is one output gate).
+
+Use integer constants and the binary operators + and *. Keep expressions fairly simple: the circuit must be strictly layered (every path from an output to an input has the same length), and layer sizes that are powers of two are safest.
+
+For example, '5*4 + 3' is not strictly layered (the input 3 sits one layer too high), but '5*4 + (3 + 0)' is.
+[0m
+Enter your circuit (or press Enter for the default '(3*2) + (4 + 1)'; type 'cancel' to abort): 
+Building the circuit, its wiring predicates, and their multilinear extensions. For larger circuits this can take a minute...
+
+[35m==============[0m
+[35mINITIALIZATION[0m
+[35m==============[0m
+
+The arithmetic circuit C is defined over GF(101) and has depth 2.
+
+Layer sizes: S_0 = 2, S_1 = 4, S_2 = 8.
+
+Gate-label bit-lengths: s_0 = 1, s_1 = 2, s_2 = 3.
+
+(Layer 0 holds the output gate(s); layer 2 holds the inputs.)
+
+(Running in a terminal: to render the circuit, call the .view() method of your ArithmeticCircuit, e.g. ArithmeticCircuit(...).view().)
+
+Public information: the circuit topology -- and hence the wiring predicates add_i, mult_i and their multilinear extensions add̃_i, mult̃_i, which V can evaluate anywhere -- together with the inputs:
+
+W_2(0, 0, 0) = 6, W_2(0, 0, 1) = 7, W_2(0, 1, 0) = 8, W_2(0, 1, 1) = 1, W_2(1, 0, 0) = 2, W_2(1, 0, 1) = 3, W_2(1, 1, 0) = 4, W_2(1, 1, 1) = 5.
+
+In particular, V can compute W̃_2 directly. What V does NOT know (and does not want to compute) are the interior gate values and the output(s): verifying a claim about the output(s), without re-executing C, is the whole point of the protocol.
+
+[33mWe display the true output(s) for the reader. In the protocol, V does not know these:[0m
+
+W_0(0) = 21, W_0(1) = 67.
+
+[35m=================[0m
+[35mCLAIMED OUTPUT(S)[0m
+[35m=================[0m
+[0m
+Choose a, b, or c: About the claimed circuit output(s), the prover will be (a) honest. (b) honest with probability 1/2. (c) dishonest.
+P claims that the circuit output(s) are:
+
+W*_0(0) = 79, W*_0(1) = 67.
+
+[31mIn this run, P's claimed output(s) are intentionally false, and P will try to get away with it.[0m
+
+V forms the multilinear extension W̃*_0 of the claimed outputs.
+
+If P's claims are correct, then W̃*_0 = W̃_0 (multilinear extensions are unique); otherwise W̃*_0 ≠ W̃_0.
+
+V samples ρ_0 uniformly at random from F^1.
+
+Here ρ_0 = (74).
+
+V computes α_0 := W̃*_0(ρ_0) = 100. The claim to be verified is now a single point-claim:
+
+W̃_0(ρ_0) = α_0 = 100.
+
+[33mSince the claimed outputs are false, W̃*_0 ≠ W̃_0, and (by Schwartz-Zippel) the event α_0 = W̃_0(ρ_0) -- which would launder the lie immediately -- has probability at most s_0/#F = 1/101 = 0.0099009901.[0m
+
+[35m==========================[0m
+[35mGKR LAYER 0 → 1: SUM-CHECK[0m
+[35m==========================[0m
+
+At the start of this layer, V holds ρ_0 = (74) and the carried claim α_0 = 100 (the claim being that W̃_0(ρ_0) = α_0).
+
+By Thaler's identity,
+
+W̃_0(ρ_0) = sum g(x_0, x_1, y_0, y_1) over (x_0, x_1, y_0, y_1) in {0,1}^4,
+
+where
+
+g(x_0, x_1, y_0, y_1) := add̃_0(ρ_0, x_0, x_1, y_0, y_1)·[W̃_1(x_0, x_1) + W̃_1(y_0, y_1)] + mult̃_0(ρ_0, x_0, x_1, y_0, y_1)·[W̃_1(x_0, x_1)·W̃_1(y_0, y_1)].
+
+V can evaluate add̃_0 and mult̃_0 anywhere (the wiring is public), but NOT W̃_1, so V cannot evaluate g pointwise. So we run the sum-check protocol on g, with claimed sum H* := α_0 = 100, deferring the evaluation of g.
+
+For soundness, V relies on degree bounds per variable (this is public information): [2, 2, 2, 2]. (Each variable has degree ≤ 1 in the wiring MLE and ≤ 1 in W̃_1, hence degree ≤ 2 in g.)
+
+[33mWe display g for the reader. In the protocol, V cannot compute g (it involves W̃_1):[0m
+
+g(x_0, x_1, y_0, y_1) = 38*x_0**2*x_1**2*y_0**2*y_1**2 + 97*x_0**2*x_1**2*y_0**2*y_1 + 67*x_0**2*x_1**2*y_0**2 + 97*x_0**2*x_1**2*y_0*y_1**2 + 70*x_0**2*x_1**2*y_0*y_1 + 25*x_0**2*x_1**2*y_0 + 97*x_0**2*x_1*y_0**2*y_1**2 + 27*x_0**2*x_1*y_0**2*y_1 + 78*x_0**2*x_1*y_0**2 + 27*x_0**2*x_1*y_0*y_1**2 + 73*x_0**2*x_1*y_0*y_1 + 8*x_0**2*x_1*y_0 + 67*x_0**2*y_0**2*y_1**2 + 78*x_0**2*y_0**2*y_1 + 57*x_0**2*y_0**2 + 78*x_0**2*y_0*y_1**2 + 56*x_0**2*y_0*y_1 + 68*x_0**2*y_0 + 59*x_0*x_1**2*y_0**2*y_1**2 + 31*x_0*x_1**2*y_0**2*y_1 + 11*x_0*x_1**2*y_0**2 + 31*x_0*x_1**2*y_0*y_1**2 + 13*x_0*x_1**2*y_0*y_1 + 84*x_0*x_1**2*y_0 + 74*x_0*x_1*y_0**2*y_1**2 + 46*x_0*x_1*y_0**2*y_1 + 79*x_0*x_1*y_0**2 + 56*x_0*x_1*y_0*y_1**2 + 82*x_0*x_1*y_0*y_1 + 34*x_0*x_1*y_0 + 59*x_0*y_0**2*y_1**2 + 31*x_0*y_0**2*y_1 + 11*x_0*y_0**2 + 31*x_0*y_0* ... (truncated).
+
+[31mThe carried claim is false: in fact W̃_0(ρ_0) = 92 ≠ 100 = α_0. To survive this sum-check, P is forced to forge round polynomials.[0m
+
+[35m=======[0m
+[35mROUND 0[0m
+[35m=======[0m
+
+Let
+
+g_0(x_0) := sum g(x_0, b_1, b_2, b_3) over (b_1, b_2, b_3) in {0,1}^3
+
+P claims that g_0(x_0) = g*_0(x_0), where 
+
+g*_0(x_0) = 22*x_0**2 + 96*x_0 + 92.
+
+If P's last two claims are true, then deg(g*_0) ≤ deg_0(g) and H* = g*_0(0) + g*_0(1).
+
+V checks the degree bound: deg(g*_0) = 2 ≤ deg_0(g) = 2.
+
+P's claim is that H = H* = 100. V proceeds to compute:
+
+g*_0(0) + g*_0(1) = 100
+
+This is easy because g*_0 is given explicitly, so V can evaluate it at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_0 = 98.
+
+[35m=======[0m
+[35mROUND 1[0m
+[35m=======[0m
+
+Let
+
+g_1(x_1) := sum g(98, x_1, b_2, b_3) over (b_2, b_3) in {0,1}^2
+
+P claims that g_1(x_1) = g*_1(x_1), where 
+
+g*_1(x_1) = 68*x_1**2 + 7*x_1 + 14.
+
+If P's last two claims are true, then deg(g*_1) ≤ deg_1(g) and g*_0(98) = g*_1(0) + g*_1(1).
+
+V checks the degree bound: deg(g*_1) = 2 ≤ deg_1(g) = 2.
+
+V proceeds to compute:
+
+         g*_0(98) = 2
+g*_1(0) + g*_1(1) = 2
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_1 = 93.
+
+[35m=======[0m
+[35mROUND 2[0m
+[35m=======[0m
+
+Let
+
+g_2(y_0) := sum g(98, 93, y_0, b_3) over (b_3) in {0,1}^1
+
+P claims that g_2(y_0) = g*_2(y_0), where 
+
+g*_2(y_0) = 51*y_0**2 + 17*y_0.
+
+If P's last two claims are true, then deg(g*_2) ≤ deg_2(g) and g*_1(93) = g*_2(0) + g*_2(1).
+
+V checks the degree bound: deg(g*_2) = 2 ≤ deg_2(g) = 2.
+
+V proceeds to compute:
+
+         g*_1(93) = 68
+g*_2(0) + g*_2(1) = 68
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_2 = 84.
+
+[35m=======[0m
+[35mROUND 3[0m
+[35m=======[0m
+
+Let
+
+g_3(y_1) := g(98, 93, 84, y_1)
+
+P claims that g_3(y_1) = g*_3(y_1), where 
+
+g*_3(y_1) = 41*y_1 + 84.
+
+If P's last two claims are true, then deg(g*_3) ≤ deg_3(g) and g*_2(84) = g*_3(0) + g*_3(1).
+
+V checks the degree bound: deg(g*_3) = 1 ≤ deg_3(g) = 2.
+
+V proceeds to compute:
+
+         g*_2(84) = 7
+g*_3(0) + g*_3(1) = 7
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_3 = 54.
+
+Unlike in the standalone sum-check protocol, V does not now evaluate g(r_x, r_y): g involves W̃_1, which V does not know. The transcript's terminal claim is
+
+γ := g*_3(r_3) = 76,
+
+the claim being that γ = g(r_x, r_y), where r_x = (98, 93) and r_y = (84, 54).
+
+V computes the (public) wiring values at this point:
+
+A = add̃_0(ρ_0, r_x, r_y) = 1
+M = mult̃_0(ρ_0, r_x, r_y) = 16
+
+Unpacking the definition of g, the claim γ = g(r_x, r_y) says exactly that
+
+γ = A·[W̃_1(r_x) + W̃_1(r_y)] + M·[W̃_1(r_x)·W̃_1(r_y)]   (the 'bridging equation').
+
+[35m===============[0m
+[35mLAYER 0 FOLDING[0m
+[35m===============[0m
+
+V cannot check the bridging equation alone: it involves W̃_1(r_x) and W̃_1(r_y), which V cannot compute. So P supplies claimed values
+
+z*_x (the claim: z*_x = W̃_1(r_x))   and   z*_y (the claim: z*_y = W̃_1(r_y)).
+
+[31mThe true endpoint values fail the bridging equation (γ is a surviving lie), so P keeps z*_x true and forges z*_y, choosing a pair consistent with γ.[0m
+
+P sends z*_x = 7 and z*_y = 31.
+
+V checks the bridging equation γ = A·(z*_x + z*_y) + M·z*_x·z*_y:
+
+                            γ = 76
+A·(z*_x + z*_y) + M·z*_x·z*_y = 76
+
+V sees that P's claims so far are consistent.
+
+We now hold TWO claims about W̃_1 (at r_x and at r_y). To avoid the number of claims doubling at every layer, V folds them into ONE, as follows.
+
+Let ℓ(t) := (1 - t)·r_x + t·r_y (the line through r_x = ℓ(0) and r_y = ℓ(1)), and let q_1(t) := W̃_1(ℓ(t)), a univariate polynomial of degree ≤ s_1 = 2.
+
+P supplies a polynomial q*_1 (the claim: q*_1 = q_1). V checks that
+
+(a) deg(q*_1) ≤ 2, and (b) q*_1(0) = z*_x and q*_1(1) = z*_y.
+
+[31mP forges q*_1 to match the claimed endpoints[0m, planting as many agreement points with the true q_1 as the degree bound allows; the roots of q*_1 - q_1 are: [33m0[0m, [33m2[0m.
+
+P claims that q_1(t) = q*_1(t), where
+
+q*_1(t) = 87*t**2 + 38*t + 7.
+
+V checks the degree bound: deg(q*_1) = 2 ≤ s_1 = 2.
+
+V checks the endpoints:
+
+q*_1(0) = 7  (should be z*_x = 7)
+q*_1(1) = 31  (should be z*_y = 31)
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here τ_1 = 61.
+
+V sets ρ_1 := ℓ(τ_1) = (52, 37) and carries the single claim
+
+α_1 := q*_1(τ_1) = 24
+
+(the claim being that α_1 = W̃_1(ρ_1)). The protocol proceeds to the next layer.
+
+[35m==========================[0m
+[35mGKR LAYER 1 → 2: SUM-CHECK[0m
+[35m==========================[0m
+
+At the start of this layer, V holds ρ_1 = (52, 37) and the carried claim α_1 = 24 (the claim being that W̃_1(ρ_1) = α_1).
+
+By Thaler's identity,
+
+W̃_1(ρ_1) = sum g(x_0, x_1, x_2, y_0, y_1, y_2) over (x_0, x_1, x_2, y_0, y_1, y_2) in {0,1}^6,
+
+where
+
+g(x_0, x_1, x_2, y_0, y_1, y_2) := add̃_1(ρ_1, x_0, x_1, x_2, y_0, y_1, y_2)·[W̃_2(x_0, x_1, x_2) + W̃_2(y_0, y_1, y_2)] + mult̃_1(ρ_1, x_0, x_1, x_2, y_0, y_1, y_2)·[W̃_2(x_0, x_1, x_2)·W̃_2(y_0, y_1, y_2)].
+
+V can evaluate add̃_1 and mult̃_1 anywhere (the wiring is public), but NOT W̃_2, so V cannot evaluate g pointwise. So we run the sum-check protocol on g, with claimed sum H* := α_1 = 24, deferring the evaluation of g.
+
+For soundness, V relies on degree bounds per variable (this is public information): [2, 2, 2, 2, 2, 2]. (Each variable has degree ≤ 1 in the wiring MLE and ≤ 1 in W̃_2, hence degree ≤ 2 in g.)
+
+[33mWe display g for the reader. In the protocol, V cannot compute g (it involves W̃_2):[0m
+
+g(x_0, x_1, x_2, y_0, y_1, y_2) = 28*x_0**2*x_1**2*x_2**2*y_0**2*y_1**2*y_2**2 + 73*x_0**2*x_1**2*x_2**2*y_0**2*y_1**2*y_2 + 87*x_0**2*x_1**2*x_2**2*y_0**2*y_1*y_2 + 14*x_0**2*x_1**2*x_2**2*y_0**2*y_1 + 45*x_0**2*x_1**2*x_2**2*y_0*y_1**2*y_2**2 + 63*x_0**2*x_1**2*x_2**2*y_0*y_1**2*y_2 + 94*x_0**2*x_1**2*x_2**2*y_0*y_1**2 + 54*x_0**2*x_1**2*x_2**2*y_0*y_1*y_2**2 + 72*x_0**2*x_1**2*x_2**2*y_0*y_1*y_2 + 36*x_0**2*x_1**2*x_2**2*y_0*y_1 + 43*x_0**2*x_1**2*x_2**2*y_0*y_2 + 58*x_0**2*x_1**2*x_2**2*y_0 + 28*x_0**2*x_1**2*x_2**2*y_1**2*y_2**2 + 66*x_0**2*x_1**2*x_2**2*y_1**2*y_2 + 7*x_0**2*x_1**2*x_2**2*y_1**2 + 47*x_0**2*x_1**2*x_2**2*y_1*y_2**2 + 33*x_0**2*x_1**2*x_2**2*y_1*y_2 + 21*x_0**2*x_1**2*x_2**2*y_1 + 40*x_0**2*x_1**2*x_2*y_0*y_1*y_2 + 73*x_0**2*x_1*x_2**2*y_0**2*y_1**2*y_2**2 + 28*x_0**2*x_1*x_2**2*y_0**2*y_1**2*y_2 + 14 ... (truncated).
+
+[31mThe carried claim is false: in fact W̃_1(ρ_1) = 8 ≠ 24 = α_1. To survive this sum-check, P is forced to forge round polynomials.[0m
+
+[35m=======[0m
+[35mROUND 0[0m
+[35m=======[0m
+
+Let
+
+g_0(x_0) := sum g(x_0, b_1, b_2, b_3, b_4, b_5) over (b_1, b_2, b_3, b_4, b_5) in {0,1}^5
+
+P claims that g_0(x_0) = g*_0(x_0), where 
+
+g*_0(x_0) = 78*x_0**2 + 83*x_0 + 83.
+
+If P's last two claims are true, then deg(g*_0) ≤ deg_0(g) and H* = g*_0(0) + g*_0(1).
+
+V checks the degree bound: deg(g*_0) = 2 ≤ deg_0(g) = 2.
+
+P's claim is that H = H* = 24. V proceeds to compute:
+
+g*_0(0) + g*_0(1) = 24
+
+This is easy because g*_0 is given explicitly, so V can evaluate it at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_0 = 97.
+
+[35m=======[0m
+[35mROUND 1[0m
+[35m=======[0m
+
+Let
+
+g_1(x_1) := sum g(97, x_1, b_2, b_3, b_4, b_5) over (b_2, b_3, b_4, b_5) in {0,1}^4
+
+P claims that g_1(x_1) = g*_1(x_1), where 
+
+g*_1(x_1) = 51*x_1**2 + 57*x_1 + 92.
+
+If P's last two claims are true, then deg(g*_1) ≤ deg_1(g) and g*_0(97) = g*_1(0) + g*_1(1).
+
+V checks the degree bound: deg(g*_1) = 2 ≤ deg_1(g) = 2.
+
+V proceeds to compute:
+
+         g*_0(97) = 90
+g*_1(0) + g*_1(1) = 90
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_1 = 39.
+
+[35m=======[0m
+[35mROUND 2[0m
+[35m=======[0m
+
+Let
+
+g_2(x_2) := sum g(97, 39, x_2, b_3, b_4, b_5) over (b_3, b_4, b_5) in {0,1}^3
+
+P claims that g_2(x_2) = g*_2(x_2), where 
+
+g*_2(x_2) = 51*x_2**2 + 70*x_2 + 38.
+
+If P's last two claims are true, then deg(g*_2) ≤ deg_2(g) and g*_1(39) = g*_2(0) + g*_2(1).
+
+V checks the degree bound: deg(g*_2) = 2 ≤ deg_2(g) = 2.
+
+V proceeds to compute:
+
+         g*_1(39) = 96
+g*_2(0) + g*_2(1) = 96
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_2 = 17.
+
+[35m=======[0m
+[35mROUND 3[0m
+[35m=======[0m
+
+Let
+
+g_3(y_0) := sum g(97, 39, 17, y_0, b_4, b_5) over (b_4, b_5) in {0,1}^2
+
+P claims that g_3(y_0) = g*_3(y_0), where 
+
+g*_3(y_0) = 55*y_0**2 + 37*y_0 + 9.
+
+If P's last two claims are true, then deg(g*_3) ≤ deg_3(g) and g*_2(17) = g*_3(0) + g*_3(1).
+
+V checks the degree bound: deg(g*_3) = 2 ≤ deg_3(g) = 2.
+
+V proceeds to compute:
+
+         g*_2(17) = 9
+g*_3(0) + g*_3(1) = 9
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_3 = 54.
+
+[35m=======[0m
+[35mROUND 4[0m
+[35m=======[0m
+
+Let
+
+g_4(y_1) := sum g(97, 39, 17, 54, y_1, b_5) over (b_5) in {0,1}^1
+
+P claims that g_4(y_1) = g*_4(y_1), where 
+
+g*_4(y_1) = 85*y_1**2 + 18*y_1 + 39.
+
+If P's last two claims are true, then deg(g*_4) ≤ deg_4(g) and g*_3(54) = g*_4(0) + g*_4(1).
+
+V checks the degree bound: deg(g*_4) = 2 ≤ deg_4(g) = 2.
+
+V proceeds to compute:
+
+         g*_3(54) = 80
+g*_4(0) + g*_4(1) = 80
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_4 = 69.
+
+[35m=======[0m
+[35mROUND 5[0m
+[35m=======[0m
+
+Let
+
+g_5(y_2) := g(97, 39, 17, 54, 69, y_2)
+
+P claims that g_5(y_2) = g*_5(y_2), where 
+
+g*_5(y_2) = 81*y_2**2 + 34*y_2 + 67.
+
+If P's last two claims are true, then deg(g*_5) ≤ deg_5(g) and g*_4(69) = g*_5(0) + g*_5(1).
+
+V checks the degree bound: deg(g*_5) = 2 ≤ deg_5(g) = 2.
+
+V proceeds to compute:
+
+         g*_4(69) = 47
+g*_5(0) + g*_5(1) = 47
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+
+V samples an element uniformly at random from GF(101); here r_5 = 96.
+
+Unlike in the standalone sum-check protocol, V does not now evaluate g(r_x, r_y): g involves W̃_2, which V does not know. The transcript's terminal claim is
+
+γ := g*_5(r_5) = 3,
+
+the claim being that γ = g(r_x, r_y), where r_x = (97, 39, 17) and r_y = (54, 69, 96).
+
+V computes the (public) wiring values at this point:
+
+A = add̃_1(ρ_1, r_x, r_y) = 8
+M = mult̃_1(ρ_1, r_x, r_y) = 16
+
+Unpacking the definition of g, the claim γ = g(r_x, r_y) says exactly that
+
+γ = A·[W̃_2(r_x) + W̃_2(r_y)] + M·[W̃_2(r_x)·W̃_2(r_y)]   (the 'bridging equation').
+
+[35mFINAL CHECK[0m
+
+Layer 2 is the input layer. The inputs are public, so V can compute W̃_2 -- and hence both endpoint values -- directly, with no help from P:
+
+z_x = W̃_2(r_x) = 59
+z_y = W̃_2(r_y) = 93
+
+V checks the bridging equation γ = A·(z_x + z_y) + M·z_x·z_y:
+
+                        γ = 3
+A·(z_x + z_y) + M·z_x·z_y = 27
+
+P fails the final verification, and V [31mREJECTS[0m P's claimed output(s).
+
+[33mInterpretation: P can often keep each layer locally consistent, but the final evaluation against the public inputs ties the entire transcript to the true circuit and typically catches a lie.
+[0m
+
+[35m============[0m
+[35mGROUND TRUTH[0m
+[35m============[0m
+
+True circuit output(s):
+
+W_0(0) = 21, W_0(1) = 67.
+
+Prover claimed:
+
+W*_0(0) = 79, W*_0(1) = 67.
+
+[33mLayer 0: the carried claim was false (α_0 = 100, true value 92); P forged round polynomials in the sum-check.[0m
+[33mLayer 0 folding: P kept z*_x true and forged the other endpoint.[0m
+[33mLayer 0 folding: P forged q*_1; roots of q*_1 - q_1: [0, 2].[0m
+[33mLayer 1: the carried claim was false (α_1 = 24, true value 8); P forged round polynomials in the sum-check.[0m
+[33mLayer 1: the final check against the public inputs failed.[0m
+
+Outcome: V [31mREJECTED[0m.
+[32m
+This was a TRUE NEGATIVE[0m: V rejected false claimed output(s).
+
+RETURN VALUE: False

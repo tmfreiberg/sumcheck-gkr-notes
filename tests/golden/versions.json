@@ -1,0 +1,5 @@
+{
+  "python": "3.12.9",
+  "sympy": "1.14.0",
+  "note": "Versions at blessing time. Goldens can drift across SymPy versions (expression string forms); if these differ from your environment, expect to re-bless rather than chase phantom regressions."
+}

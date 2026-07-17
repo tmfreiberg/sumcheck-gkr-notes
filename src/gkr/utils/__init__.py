@@ -1,49 +1,33 @@
-from .decorators import count_calls
-
-# filesystem/tree utilities
-from .tree import (
-    get_directory_tree,
-    get_subdirectories,
-    extend_ignore_list,
-)
-
-# display/terminal utilities + colors
+# Display and terminal utilities, and the colour palette.
 from .display import (
+    BLUE,
+    GREEN,
+    PINK,
+    PURPLE,
+    RED,
+    RESET,
+    YELLOW,
+    SupportsPrint,
     TerminalOutput,
-    out,
     display_aligned,
+    out,
     print_header,
     print_header_block,
+    progress,
     stringify,
     to_string,
-    RED,
-    GREEN,
-    YELLOW,
-    PINK,
-    BLUE,
-    PURPLE,
-    RESET,
 )
 
 __all__ = [
-    # decorators
-    "count_calls",
-
-    # tree
-    "get_directory_tree",
-    "get_subdirectories",
-    "extend_ignore_list",
-
-    # display
     "TerminalOutput",
+    "SupportsPrint",
     "out",
     "display_aligned",
     "print_header",
+    "progress",
     "print_header_block",
     "stringify",
     "to_string",
-
-    # colors
     "RED",
     "GREEN",
     "YELLOW",

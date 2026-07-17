@@ -1,0 +1,136 @@
+[0m
+Do you want this to be interactive? (y/n): [0mDo you want to act as prover? (y/n): [0mDo you want to act as verifier? (y/n): [0m
+Enter a prime p (or 'cancel' to abort):[0m
+Enter your polynomial over GF(331) (examples: 2*X_0^2 + X_0 X_1, x*y + z, X_11 + 3):[0m
+Choose a, b, or c: About the value of H (the sum of g over the Boolean hypercube), the prover will be (a) honest. (b) honest with probability 1/2. (c) dishonest.
+[35m==============[0m
+[35mINITIALIZATION[0m
+[35m==============[0m
+
+For soundness, V relies on degree bounds per variable (this is public information): [1, 1, 2].
+
+Let
+
+H := sum g(b_0, b_1, b_2) over (b_0, b_1, b_2) in {0,1}^3.
+
+P claims that H = H*, where H* = 123.
+
+[35m=======[0m
+[35mROUND 0[0m
+[35m=======[0m
+
+Let
+
+g_0(x) := sum g(x, b_1, b_2) over (b_1, b_2) in {0,1}^2
+
+P claims that g_0(x) = g*_0(x), where 
+
+g*_0(x) = 117*x + 3.
+
+If P's last two claims are true, then deg(g*_0) ≤ deg_0(g) and H* = g*_0(0) + g*_0(1).
+
+V checks the degree bound: deg(g*_0) = 1 ≤ deg_0(g) = 1.
+
+P's claim is that H = H* = 123. V proceeds to compute:
+
+g*_0(0) + g*_0(1) = 123
+
+This is easy because g*_0 is given explicitly, so V can evaluate it at 0 and 1.
+
+V sees that P's claims so far are consistent.
+[0m
+As verifier, choose an element of GF(331) uniformly at random, independent of any previous choice:
+V samples an element uniformly at random from GF(331); here r_0 = 1.
+
+[35m=======[0m
+[35mROUND 1[0m
+[35m=======[0m
+
+Let
+
+g_1(y) := sum g(1, y, b_2) over (b_2) in {0,1}^1
+
+P claims that g_1(y) = g*_1(y), where 
+
+g*_1(y) = 114*y + 3.
+
+If P's last two claims are true, then deg(g*_1) ≤ deg_1(g) and g*_0(1) = g*_1(0) + g*_1(1).
+
+V checks the degree bound: deg(g*_1) = 1 ≤ deg_1(g) = 1.
+
+V proceeds to compute:
+
+          g*_0(1) = 120
+g*_1(0) + g*_1(1) = 120
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+[0m
+As verifier, choose an element of GF(331) uniformly at random, independent of any previous choice:
+V samples an element uniformly at random from GF(331); here r_1 = 1.
+
+[35m=======[0m
+[35mROUND 2[0m
+[35m=======[0m
+
+Let
+
+g_2(z) := g(1, 1, z)
+
+P claims that g_2(z) = g*_2(z), where 
+
+g*_2(z) = 2*z**2 + 113*z + 1.
+
+If P's last two claims are true, then deg(g*_2) ≤ deg_2(g) and g*_1(1) = g*_2(0) + g*_2(1).
+
+V checks the degree bound: deg(g*_2) = 2 ≤ deg_2(g) = 2.
+
+V proceeds to compute:
+
+          g*_1(1) = 117
+g*_2(0) + g*_2(1) = 117
+
+This is easy because both claimed polynomials are given explicitly, and V only needs univariate evaluations at 0 and 1.
+
+V sees that P's claims so far are consistent.
+[0m
+As verifier, choose an element of GF(331) uniformly at random, independent of any previous choice:
+[35mFINAL CHECK[0m
+
+V samples an element uniformly at random from GF(331); here r_2 = 1.
+
+If all of P's claims are true, then
+
+g*_2(1) = g(1, 1, 1).
+
+V computes
+
+g*_2(1) = 116.
+
+Finally, V queries an oracle for g at r to obtain
+
+g(1, 1, 1) = 3.
+
+P fails the final verification, and V [31mREJECTS[0m P's initial claim that H = H*.
+
+[33mInterpretation: P can often keep the transcript locally consistent round-by-round, but the final random evaluation ties the transcript to the true g and typically catches a lie.
+[0m
+
+[35m============[0m
+[35mGROUND TRUTH[0m
+[35m============[0m
+
+True polynomial g:
+
+g(x, y, z) = x*y + x*z + z**2
+
+True value of H := sum g(b) over b in {0,1}^3 is: 8
+
+Prover claimed that this is equal to: H* = 123.
+
+Outcome: V [31mREJECTED[0m.
+[32m
+This was a TRUE NEGATIVE[0m: V rejected a false claim.
+
+RETURN VALUE: False
