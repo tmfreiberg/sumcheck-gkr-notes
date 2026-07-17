@@ -51,7 +51,6 @@ If it turns out that
 (c) g*_0(r_0) = g_0(r_0),
 
 where r_0 is the random element of GF(5) that V will sample next,
-
 then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
 
 As you don't know what r_0 will be, the best you can do is choose g*_0 satisfying (a) and (b) such that
