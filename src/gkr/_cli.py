@@ -292,7 +292,8 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p_watch.add_argument("path", metavar="PATH", help="the file passed to 'sumcheck -S'")
+    p_watch.add_argument("path", metavar="PATH",
+                         help="the file passed to 'sumcheck -S' or 'gkr -S'")
     p_watch.add_argument(
         "-a", "--all", action="store_true",
         help="print the whole file first (default: only lines written from now on)",

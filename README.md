@@ -49,6 +49,8 @@ The notebooks currently cover (but are not limited to):
   - High-level structure and intuition
   - How sum-check is used layer-by-layer
   - Folding and claim reduction
+  - Completeness, and a proof of the soundness error bound, with the union
+    bound checked against Monte Carlo over a deliberately tiny field
 
 The scope may expand over time as additional related topics become relevant.
 
@@ -57,8 +59,8 @@ The scope may expand over time as additional related topics become relevant.
 The project is packaged as a standard Python package so that the notebooks can
 focus on mathematics rather than setup code.
 
-The only **system-level dependency** is **Graphviz**, which is required for
-circuit and protocol visualizations.
+Python **3.10 or later** is required. The only **system-level dependency** is
+**Graphviz**, which is required for circuit and protocol visualizations.
 
 ### 1. System prerequisite: Graphviz
 
@@ -153,6 +155,12 @@ reflected in notebooks and scripts without reinstallation.
   pip install -e ".[notebook,colors]"
   ```
 
+- Development tools (pytest, ruff, mypy) — only needed to run the test suite:
+
+  ```bash
+  pip install -e ".[dev]"
+  ```
+
 ### 4. Launch Jupyter
 
 ```bash
@@ -170,17 +178,93 @@ required.
 
 ### Notes
 
-- The package also installs a small CLI entry point:
-
-  ```bash
-  gkr
-  ```
-
-  (This will expand over time.)
-
 - Visualization features depend on Graphviz being available on your system. If
   you encounter rendering errors, verify that `dot` is accessible from the
   command line.
+
+## Command-line interface
+
+Everything the notebooks show can also be run from a terminal, via the `gkr`
+command installed with the package:
+
+```bash
+gkr sumcheck                          # run the sum-check protocol
+gkr gkr                               # run the GKR protocol
+gkr circuit "(3*2) + (4 + 1)"         # build an arithmetic circuit and inspect it
+gkr mle -p 5 --values 1,2,3,4         # build a multilinear extension
+gkr example gkr                       # a complete worked example, no prompts
+gkr watch prover.txt                  # follow a prover-secrets file (see below)
+```
+
+Each subcommand has its own `--help` with examples. By default the protocols are
+interactive: you can play the prover, the verifier, or neither and watch. A few
+flags worth knowing:
+
+```bash
+gkr sumcheck -c                       # use the toy polynomial commitment
+gkr gkr -C "(1+2)*(3+4); (5+6)" --pad # a given circuit; --pad levels the layers
+gkr gkr -t proof.json                 # write the public transcript (the proof) as JSON
+gkr circuit "5*4+3" --no-strict       # see WHY a circuit is unsuitable for GKR
+gkr mle -p 5 --values 1,2,3,4 --array # ...and its values over all of GF(5)^2
+```
+
+Quote expressions with **double** quotes: `cmd.exe` does not treat `'` as a
+quote character.
+
+### Presentation mode
+
+You can play the prover in front of an audience without the shared screen
+revealing what only the prover may know — the true sum, and the per-round cheat
+advice, which depends on the challenges the audience has just called out and so
+cannot be prepared in advance.
+
+Run the watcher in a second terminal that only you can see:
+
+```bash
+gkr watch prover.txt                  # start this FIRST; it waits for the file
+```
+
+and the session in the first:
+
+```bash
+gkr sumcheck -S prover.txt            # or: gkr gkr -S prover.txt
+```
+
+The shared screen shows the verifier's view; everything prover-private is
+appended to `prover.txt` instead. The same works from a notebook or script via
+`sum_check(secrets_to="prover.txt")` and `gkr(secrets_to="prover.txt")`.
+
+## Development
+
+The test suite pins both the mathematics and the narration:
+
+```bash
+pip install -e ".[dev]"
+pytest                                # 83 tests; a few minutes
+ruff check .
+mypy src/gkr
+```
+
+- `tests/test_golden.py` compares 18 recorded sessions against
+  `tests/golden/transcripts/*.golden.txt`, **byte for byte**.
+- `tests/test_invariants.py` checks protocol properties (completeness,
+  soundness, the audience routing, the narrated soundness bound) rather than
+  fixed output.
+- `tests/test_transcript.py` cross-checks the JSON proof against the narration.
+- `tests/test_circuits.py` pins the arithmetic-circuit layer.
+
+**The golden transcripts are generated artifacts.** When a change to the
+narration is intentional, review the diff and then re-record them:
+
+```bash
+python tests/golden/harness.py --bless               # all scenarios
+python tests/golden/harness.py --bless NAME [NAME…]  # just these
+```
+
+Never edit a golden file by hand — a hand-copied file loses its trailing newline
+and produces a baffling diff. Note also that `tests/golden/transcripts/` is
+covered by a `.gitattributes` rule that disables line-ending normalization; the
+byte-for-byte comparison depends on it.
 
 ## Provenance and attribution
 
