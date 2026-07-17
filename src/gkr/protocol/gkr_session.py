@@ -181,6 +181,8 @@ def gkr(
         notes=tuple(result.notes),
         accepted=accepted,
         initial_claim_false=result.initial_claim_false,
+        s_list=tuple(s_list),
+        field_mod=int(F.mod),
     ))
 
     if save_transcript is not None:

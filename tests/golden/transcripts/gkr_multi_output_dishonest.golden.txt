@@ -226,6 +226,8 @@ A·(z*_x + z*_y) + M·z*_x·z*_y = 76
 
 V sees that P's claims so far are consistent.
 
+[33mNote: this check spends none of V's randomness. A and M are public and already fixed, so a P whose γ is false can always solve the bridging equation for forged endpoints (unless A = M = 0, when a false γ is caught outright). Consistency here is not evidence of honesty; the soundness budget lives entirely in the random challenges (ρ_0, the round challenges, and each fold challenge).[0m
+
 We now hold TWO claims about W̃_1 (at r_x and at r_y). To avoid the number of claims doubling at every layer, V folds them into ONE, as follows.
 
 Let ℓ(t) := (1 - t)·r_x + t·r_y (the line through r_x = ℓ(0) and r_y = ℓ(1)), and let q_1(t) := W̃_1(ℓ(t)), a univariate polynomial of degree ≤ s_1 = 2.
@@ -235,6 +237,10 @@ P supplies a polynomial q*_1 (the claim: q*_1 = q_1). V checks that
 (a) deg(q*_1) ≤ 2, and (b) q*_1(0) = z*_x and q*_1(1) = z*_y.
 
 [31mP forges q*_1 to match the claimed endpoints[0m, planting as many agreement points with the true q_1 as the degree bound allows; the roots of q*_1 - q_1 are: [33m0[0m, [33m2[0m.
+
+The probability of V sampling one of these roots as τ_1 is 2/101 = 0.0198019802.
+
+In general, by Schwartz-Zippel, this probability cannot exceed s_1/#F = 2/101 = 0.0198019802.
 
 P claims that q_1(t) = q*_1(t), where
 
@@ -464,6 +470,8 @@ Layer 2 is the input layer. The inputs are public, so V can compute W̃_2 -- and
 z_x = W̃_2(r_x) = 59
 z_y = W̃_2(r_y) = 93
 
+[33mNothing is left for P to forge: both endpoints are V's own, and there is no fold after the input layer. This last check spends no randomness -- a lie that survived to here is caught with certainty.[0m
+
 V checks the bridging equation γ = A·(z_x + z_y) + M·z_x·z_y:
 
                         γ = 3
@@ -491,6 +499,14 @@ W*_0(0) = 79, W*_0(1) = 67.
 [33mLayer 0 folding: P forged q*_1; roots of q*_1 - q_1: [0, 2].[0m
 [33mLayer 1: the carried claim was false (α_1 = 24, true value 8); P forged round polynomials in the sum-check.[0m
 [33mLayer 1: the final check against the public inputs failed.[0m
+
+Soundness accounting. P is exposed to V's randomness in exactly three places: the draw of ρ_0, each sum-check round challenge, and each fold challenge. Union-bounding those exposures (see the notes), a dishonest P's chance of acceptance over this circuit and field is at most
+
+(1 + 4·(2 + 3) + (2))/101 = 23/101 = 0.2277227723
+
+(the three terms in that order: the draw of ρ_0, two chances per round across every sum-check, and one fold per intermediate layer).
+
+The bridging equations and the final check spend no randomness at all: a consistent liar passes them for free, and the whole budget above is what stands between V and a false claim.
 
 Outcome: V [31mREJECTED[0m.
 [32m

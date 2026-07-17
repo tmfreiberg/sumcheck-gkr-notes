@@ -717,3 +717,40 @@ def test_cli_circuit_splits_multiple_outputs_on_semicolons() -> None:
     assert proc.returncode == 0, proc.stderr[-300:]
     assert "W_0(0) = 21" in proc.stdout
     assert "W_0(1) = 11" in proc.stdout
+
+
+def test_gkr_narrates_its_own_soundness_bound() -> None:
+    """The ground-truth epilogue tallies the run's union bound, and the tally
+    must agree with the theorem in notebook 04: s_0 + 4*sum(s_1..s_d) for the
+    sum-check rounds, plus one fold per intermediate layer.
+
+    For '(3*2) + (4+1)' over GF(101): (s_0,s_1,s_2) = (0,1,2), so the bound is
+    (0 + 4*(1+2) + 1)/101 = 13/101.
+    """
+    code = "\n".join([
+        "import random; random.seed(1)",
+        "from gkr import gkr_example",
+        "gkr_example(dishonest=True, prime=101)",
+    ])
+    proc = _run_session(code, "", ZKNOTES_COLOR="never")
+    assert "Soundness accounting" in proc.stdout, proc.stdout[-400:]
+    assert "(0 + 4·(1 + 2) + (1))/101 = 13/101" in proc.stdout, (
+        f"the tally does not match the theorem:\n{proc.stdout[-600:]}"
+    )
+    # the deterministic steps must be named as such: they carry no budget
+    assert "spends none of V's randomness" in proc.stdout
+    assert "caught with certainty" in proc.stdout
+
+
+def test_gkr_soundness_bound_is_honest_when_vacuous() -> None:
+    """Over a tiny field the union bound can exceed 1. Printing '2.6' as a
+    probability would be nonsense; the narration must say so instead."""
+    code = "\n".join([
+        "import random; random.seed(1)",
+        "from gkr import gkr_example",
+        "gkr_example(dishonest=True, prime=5)",
+    ])
+    proc = _run_session(code, "", ZKNOTES_COLOR="never")
+    assert "13/5" in proc.stdout
+    assert "vacuous" in proc.stdout, "a bound above 1 must be flagged, not printed as a probability"
+    assert "0.0000000000" not in proc.stdout

@@ -164,6 +164,14 @@ W*_0() = 10.
 
 [33mLayer 0: V rejected during the sum-check.[0m
 
+Soundness accounting. P is exposed to V's randomness in exactly three places: the draw of ρ_0, each sum-check round challenge, and each fold challenge. Union-bounding those exposures (see the notes), a dishonest P's chance of acceptance over this circuit and field is at most
+
+(0 + 4·(1 + 2) + (1))/331 = 13/331 = 0.0392749245
+
+(the three terms in that order: the draw of ρ_0, two chances per round across every sum-check, and one fold per intermediate layer).
+
+The bridging equations and the final check spend no randomness at all: a consistent liar passes them for free, and the whole budget above is what stands between V and a false claim.
+
 Outcome: V [31mREJECTED[0m.
 [32m
 This was a TRUE NEGATIVE[0m: V rejected false claimed output(s).

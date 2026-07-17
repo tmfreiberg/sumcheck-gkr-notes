@@ -346,6 +346,11 @@ def _render_layer_events(e: Event, *, out, F, view, notation, palette) -> bool:
             f"{n.z_y()} = {n.W(e.depth)}({n.r('y')}) = {e.z_y}",
             out=out,
         )
+        out.print(
+            f"\n{YELLOW}Nothing is left for P to forge: both endpoints are V's own, and there is "
+            f"no fold after the input layer. This last check spends no randomness -- a lie that "
+            f"survived to here is caught with certainty.{RESET}"
+        )
         out.print(f"\nV checks the bridging equation {n.gamma()} = A\u00b7({n.z_x()} + {n.z_y()}) + M\u00b7z_x\u00b7z_y:\n")
         display_aligned(
             f"{n.gamma()} = {e.gamma}",
@@ -362,8 +367,8 @@ def _render_layer_events(e: Event, *, out, F, view, notation, palette) -> bool:
                 )
                 out.print(
                     f"\n{YELLOW}P GOT LUCKY:{RESET} at some point a random verifier challenge "
-                    f"happened to land where a forged object agreed with the true one. Over a "
-                    f"large field, this success event should be rare."
+                    f"happened to land where a forged object agreed with the true one. The "
+                    f"Ground truth section below tallies exactly how likely that was."
                 )
         else:
             out.print(
@@ -463,6 +468,14 @@ def _render_layer_events(e: Event, *, out, F, view, notation, palette) -> bool:
             out.print(f"\nV {RED}REJECTS{RESET} (bridging equation failed). The protocol terminates.")
         else:
             out.print("\nV sees that P's claims so far are consistent.")
+            out.print(
+                f"\n{YELLOW}Note: this check spends none of V's randomness. A and M are public "
+                f"and already fixed, so a P whose {n.gamma()} is false can always solve the bridging "
+                f"equation for forged endpoints (unless A = M = 0, when a false {n.gamma()} is caught "
+                f"outright). Consistency here is not evidence of honesty; the soundness budget lives "
+                f"entirely in the random challenges ({n.rho(0)}, the round challenges, and "
+                f"each fold challenge).{RESET}"
+            )
 
     elif isinstance(e, QIntroduced):
         out.print(
@@ -532,6 +545,16 @@ def _render_layer_events(e: Event, *, out, F, view, notation, palette) -> bool:
             f"as many agreement points with the true {n.q(e.i + 1)} as the degree bound allows; "
             f"the roots of {n.q(e.i + 1, star=True)} - {n.q(e.i + 1)} are: {print_roots}."
         )
+        if e.field_mod:
+            if e.roots:
+                out.print(
+                    f"\nThe probability of V sampling one of these roots as {n.tau(e.i + 1)} is "
+                    f"{len(e.roots)}/{e.field_mod} = {len(e.roots)/e.field_mod:.10f}."
+                )
+            out.print(
+                f"\nIn general, by Schwartz-Zippel, this probability cannot exceed "
+                f"{n.label_bits(e.i + 1)}/#F = {e.s_next}/{e.field_mod} = {e.s_next/e.field_mod:.10f}."
+            )
 
     elif isinstance(e, QSent):
         out.print(f"\nP claims that {n.q(e.i + 1)}({n.t()}) = {n.q(e.i + 1, star=True)}({n.t()}), where\n\n{n.q(e.i + 1, star=True)}({n.t()}) = {e.q_star.as_expr()}.")
@@ -589,6 +612,40 @@ def _render_layer_events(e: Event, *, out, F, view, notation, palette) -> bool:
             out.print("")
             for note in e.notes:
                 out.print(f"{YELLOW}{_format_note(note, n)}{RESET}")
+        if e.s_list and e.field_mod:
+            s_vals = list(e.s_list)
+            p_mod = e.field_mod
+            s0, rest, mids = s_vals[0], s_vals[1:], s_vals[1:-1]
+            total = s0 + 4 * sum(rest) + sum(mids)
+            rounds_str = " + ".join(str(x) for x in rest)
+            folds_str = " + ".join(str(x) for x in mids) if mids else "0"
+            out.print(
+                f"\nSoundness accounting. P is exposed to V's randomness in exactly three places: "
+                f"the draw of {n.rho(0)}, each sum-check round challenge, and each fold challenge. "
+                f"Union-bounding those exposures (see the notes), a dishonest P's chance of "
+                f"acceptance over this circuit and field is at most\n"
+            )
+            if total < p_mod:
+                out.print(
+                    f"({s0} + 4\u00b7({rounds_str}) + ({folds_str}))/{p_mod} "
+                    f"= {total}/{p_mod} = {total/p_mod:.10f}"
+                )
+            else:
+                out.print(
+                    f"({s0} + 4\u00b7({rounds_str}) + ({folds_str}))/{p_mod} "
+                    f"= {total}/{p_mod} -- which exceeds 1: over a field this small the "
+                    f"bound is vacuous, and deceiving V is not merely possible but likely. "
+                    f"This is exactly why GKR wants a large field."
+                )
+            out.print(
+                f"\n(the three terms in that order: the draw of {n.rho(0)}, two chances per round "
+                f"across every sum-check, and one fold per intermediate layer)."
+            )
+            out.print(
+                "\nThe bridging equations and the final check spend no randomness at all: a "
+                "consistent liar passes them for free, and the whole budget above is what stands "
+                "between V and a false claim."
+            )
         if e.accepted:
             out.print(f"\nOutcome: V {GREEN}ACCEPTED{RESET}.")
             if not e.initial_claim_false:

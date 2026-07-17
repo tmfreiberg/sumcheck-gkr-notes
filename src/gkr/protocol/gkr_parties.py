@@ -212,6 +212,7 @@ class GkrMachineProver:
         self.sink.emit(QForgeNote(
             audience=Audience.NARRATOR, i=ctx.i,
             roots=tuple(int(z) for z in ctx.roots),
+            s_next=int(ctx.s_next), field_mod=int(ctx.field_mod),
         ))
         return ctx.suggestion
 

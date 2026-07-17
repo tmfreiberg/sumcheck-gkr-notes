@@ -276,9 +276,13 @@ class QAdvice(Event):
 
 @dataclass(frozen=True)
 class QForgeNote(Event):
-    """Machine prover's narrator note: q* forged, with the planted roots."""
+    """Machine prover's narrator note: q* forged, with the planted roots and
+    the fold's Schwartz-Zippel exposure (so a spectator watching a machine
+    prover sees the same odds an interactive prover is told)."""
     i: int
     roots: Tuple[int, ...]
+    s_next: int = 0
+    field_mod: int = 0
 
 
 @dataclass(frozen=True)
@@ -404,6 +408,10 @@ class GkrGroundTruth(Event):
     notes: Tuple[Note, ...]
     accepted: bool
     initial_claim_false: bool
+    # For the soundness accounting: the label bit-lengths s_0..s_d and #F,
+    # from which the run's union bound is computed at render time.
+    s_list: Tuple[int, ...] = ()
+    field_mod: int = 0
 
 
 # ----------------------------------------------------------------------------
