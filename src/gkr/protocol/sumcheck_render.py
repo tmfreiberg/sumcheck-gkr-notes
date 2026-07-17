@@ -167,13 +167,14 @@ def make_renderer(
             out.print("\nV will check that:")
             out.print(f"\n(a) {n.deg(n.g(j, star=True))} \u2264 {n.deg(g, wrt=j)} = {d}")
             out.print(f"\n(b) {n.g(j, star=True)}(0) + {n.g(j, star=True)}(1) = {event.carried_claim}")
-            # One sentence -- "If (c) holds, where r_j is ..., then V will
-            # accept" -- so it is one print. Splitting it put a blank line
-            # between the condition and its consequence.
+            # "If (c) holds, where r_j is ..., then V will accept" is one
+            # sentence and renders as one unbroken line: no newline between the
+            # condition and its consequence. (out.print terminates the line, so
+            # a following print that opens with \n yields a blank line.)
             out.print(
                 f"\nIf it turns out that\n"
                 f"\n(c) {n.g(j, star=True)}({n.r(j)}) = {n.g(j)}({n.r(j)}),\n"
-                f"\nwhere {n.r(j)} is the random element of {F} that V will sample next,\n"
+                f"\nwhere {n.r(j)} is the random element of {F} that V will sample next, "
                 f"then V will accept your original claim if you send the 'true' "
                 f"polynomials {n.g('k', star=True)} = {n.g('k')} in subsequent rounds."
             )

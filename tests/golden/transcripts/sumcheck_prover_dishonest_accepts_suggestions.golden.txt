@@ -50,8 +50,7 @@ If it turns out that
 
 (c) g*_0(r_0) = g_0(r_0),
 
-where r_0 is the random element of GF(331) that V will sample next,
-then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+where r_0 is the random element of GF(331) that V will sample next, then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
 
 As you don't know what r_0 will be, the best you can do is choose g*_0 satisfying (a) and (b) such that
 
@@ -118,8 +117,7 @@ If it turns out that
 
 (c) g*_1(r_1) = g_1(r_1),
 
-where r_1 is the random element of GF(331) that V will sample next,
-then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+where r_1 is the random element of GF(331) that V will sample next, then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
 
 As you don't know what r_1 will be, the best you can do is choose g*_1 satisfying (a) and (b) such that
 
@@ -187,8 +185,7 @@ If it turns out that
 
 (c) g*_2(r_2) = g_2(r_2),
 
-where r_2 is the random element of GF(331) that V will sample next,
-then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
+where r_2 is the random element of GF(331) that V will sample next, then V will accept your original claim if you send the 'true' polynomials g*_k = g_k in subsequent rounds.
 
 As you don't know what r_2 will be, the best you can do is choose g*_2 satisfying (a) and (b) such that
 
