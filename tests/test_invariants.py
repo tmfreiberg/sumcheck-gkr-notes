@@ -414,7 +414,7 @@ def test_secrets_channel_separates_prover_private_from_the_screen(tmp_path) -> N
         f"print('RETURN:', sum_check(use_commitment=True, secrets_to=r'{secrets}'))"
     )
     # colour ON, so that the channel's ANSI-stripping is actually exercised
-    proc = _run_session(code, _PROVER_STDIN, ZKNOTES_COLOR="always")
+    proc = _run_session(code, _PROVER_STDIN, GKR_COLOR="always")
     assert "RETURN:" in proc.stdout, (
         "the session did not run to completion -- stdin is out of step with the "
         f"prompts:\n{proc.stdout[-600:]}\n{proc.stderr[-400:]}"
@@ -444,7 +444,7 @@ def test_prover_secret_mode_without_a_channel_is_refused() -> None:
     proc = _run_session(
         "from gkr import sum_check; print('RETURN:', sum_check(secret_mode=True))",
         "y\ny\nn\n",
-        ZKNOTES_COLOR="never",
+        GKR_COLOR="never",
     )
     assert "RETURN: None" in proc.stdout
     assert "nowhere" in proc.stdout and "secrets_to" in proc.stdout
@@ -544,7 +544,7 @@ def test_gkr_secrets_channel_separates_prover_private_from_the_screen(tmp_path) 
         "ac = ArithmeticCircuit('(3*2) + (4 + 1)', prime=2**31 - 1)",
         f"print('RETURN:', gkr(ac, secrets_to=r'{secrets}'))",
     ])
-    proc = _run_session(code, stdin, ZKNOTES_COLOR="always")
+    proc = _run_session(code, stdin, GKR_COLOR="always")
     assert "RETURN:" in proc.stdout, (
         f"the session did not run to completion:\n{proc.stdout[-500:]}\n{proc.stderr[-300:]}"
     )
@@ -567,7 +567,7 @@ def test_gkr_prover_secret_mode_without_a_channel_is_refused() -> None:
         "ac = ArithmeticCircuit('(3*2) + (4 + 1)', prime=2**31 - 1)",
         "print('RETURN:', gkr(ac, secret_mode=True))",
     ])
-    proc = _run_session(code, "y\ny\nn\n", ZKNOTES_COLOR="never")
+    proc = _run_session(code, "y\ny\nn\n", GKR_COLOR="never")
     assert "RETURN: None" in proc.stdout
     assert "nowhere" in proc.stdout and "secrets_to" in proc.stdout
 
@@ -732,7 +732,7 @@ def test_gkr_narrates_its_own_soundness_bound() -> None:
         "from gkr import gkr_example",
         "gkr_example(dishonest=True, prime=101)",
     ])
-    proc = _run_session(code, "", ZKNOTES_COLOR="never")
+    proc = _run_session(code, "", GKR_COLOR="never")
     assert "Soundness accounting" in proc.stdout, proc.stdout[-400:]
     assert "(0 + 4·(1 + 2) + (1))/101 = 13/101" in proc.stdout, (
         f"the tally does not match the theorem:\n{proc.stdout[-600:]}"
@@ -750,7 +750,7 @@ def test_gkr_soundness_bound_is_honest_when_vacuous() -> None:
         "from gkr import gkr_example",
         "gkr_example(dishonest=True, prime=5)",
     ])
-    proc = _run_session(code, "", ZKNOTES_COLOR="never")
+    proc = _run_session(code, "", GKR_COLOR="never")
     assert "13/5" in proc.stdout
     assert "vacuous" in proc.stdout, "a bound above 1 must be flagged, not printed as a probability"
     assert "0.0000000000" not in proc.stdout

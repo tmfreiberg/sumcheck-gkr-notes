@@ -1,3 +1,9 @@
+# Python cache
+**/__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 # Python packaging/build artifacts
 build/
 dist/
@@ -12,19 +18,20 @@ pip-wheel-metadata/
 venv/
 env/
 
-# OS/editor
-.DS_Store
-.idea/
-
-# Python cache
-**/__pycache__/
-
-# pytest
-.pytest_cache/
-
 # Jupyter
 **/.ipynb_checkpoints/
+
+# Quarto
+**/.quarto/
+**/_output/
+**/.jupyter_cache/
+**/_output/*.tex
+**/_output/*.log
 
 # Run artifacts: transcripts (-t) and prover secrets (-S) written while demoing
 /proof.json
 /prover.txt
+
+# OS/editor
+.DS_Store
+.idea/

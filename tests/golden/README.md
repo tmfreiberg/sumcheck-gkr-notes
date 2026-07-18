@@ -29,7 +29,7 @@ The harness sets, in the child process only (you don't need to set anything):
 - `random.seed(<scenario seed>)` — machine choices: verifier challenges,
   dishonest claims, coin flips, forged-value fallbacks.
 - `PYTHONHASHSEED=0` — set-iteration order during circuit construction.
-- `ZKNOTES_COLOR=always` — ANSI colors are captured, so the color semantics
+- `GKR_COLOR=always` — ANSI colors are captured, so the color semantics
   (green = true, red = lie, yellow = aside, purple = header) are protected too.
 - `PYTHONUTF8=1`, `PYTHONIOENCODING=utf-8` — Windows-safe unicode (W̃, α, ρ, τ).
 

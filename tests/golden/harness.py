@@ -5,7 +5,7 @@ Each Scenario runs an interactive protocol in a *fresh subprocess* with:
 
   - a fixed RNG seed (machine choices: challenges, dishonest claims, coin flips),
   - PYTHONHASHSEED=0 (set-iteration order in circuit construction),
-  - ZKNOTES_COLOR=always (ANSI colors captured, so color semantics are protected),
+  - GKR_COLOR=always (ANSI colors captured, so color semantics are protected),
   - UTF-8 I/O forced (Windows-safe for W-tilde, alpha, rho, ...),
   - canned stdin (the user's answers to every prompt).
 
@@ -258,7 +258,7 @@ def child_env() -> Dict[str, str]:
     existing = env.get("PYTHONPATH", "")
     env["PYTHONPATH"] = str(SRC_DIR) + (os.pathsep + existing if existing else "")
     env["PYTHONHASHSEED"] = "0"        # set-iteration order during circuit construction
-    env["ZKNOTES_COLOR"] = "always"    # capture ANSI colors in the golden transcripts
+    env["GKR_COLOR"] = "always"    # capture ANSI colors in the golden transcripts
     env["PYTHONUTF8"] = "1"            # Windows-safe unicode I/O
     env["PYTHONIOENCODING"] = "utf-8"
     return env

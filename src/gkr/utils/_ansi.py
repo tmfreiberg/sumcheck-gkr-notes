@@ -21,7 +21,7 @@ def _is_tty() -> bool:
 
 def _env_mode() -> str:
     # "auto" | "always" | "never"
-    return os.getenv("ZKNOTES_COLOR", "auto").strip().lower()
+    return os.getenv("GKR_COLOR", "auto").strip().lower()
 
 def _windows_supports_ansi_natively() -> bool:
     # Windows Terminal / VSCode terminal typically set WT_SESSION or TERM_PROGRAM

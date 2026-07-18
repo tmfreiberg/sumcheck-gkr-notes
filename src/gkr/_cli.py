@@ -322,7 +322,7 @@ def _apply_environment(args: argparse.Namespace) -> None:
     """Colour must be set before any gkr import; the seed only before a run."""
     color = getattr(args, "color", None)
     if color is not None:
-        os.environ["ZKNOTES_COLOR"] = color
+        os.environ["GKR_COLOR"] = color
     seed = getattr(args, "seed", None)
     if seed is not None:
         import random
