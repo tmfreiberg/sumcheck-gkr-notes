@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import time
 from itertools import product
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 import numpy as np
 from sympy import GF, Poly, Symbol, degree, isprime, symbols
@@ -37,6 +37,7 @@ from .protocol import (
     MachineProver,
     PolynomialOracle,
     RandomVerifier,
+    ScriptedVerifier,
     Sink,
     make_renderer,
     run_sum_check,
@@ -57,7 +58,13 @@ from .utils import (
 )
 
 
-def total_degree_example(out=out) -> None:
+def total_degree_example(out=out, interactive: bool = True) -> None:
+    """Show the total-degree and per-variable-degree notions on a worked example.
+
+    interactive=True (default) loops, offering further examples with polynomials
+    the user enters. interactive=False shows the single built-in example and
+    returns -- the prompt-free path a rendered book or a stdin-closed run needs.
+    """
     loop_counter: int = 0
     carry_on: bool = True
     while carry_on:
@@ -80,6 +87,8 @@ def total_degree_example(out=out) -> None:
         out.print(f"\nThe total degree of g is deg(g) = {g.total_degree()}")
         for X in g.gens:
             out.print(f"\nThe degree of {X} in g is deg_{X}(g) = {degree(g, X)}.")
+        if not interactive:
+            break
         again = out.input("\nAnother example? (y/n)")
         loop_counter += 1
         if again == 'n':
@@ -164,20 +173,38 @@ def _fmt_sz_bound(d: int, p: int) -> str:
     bound = d / p
     return f"{d}/{p} = {bound}"
 
-def roots_example(time_out: Optional[float] = None, out=out) -> None:
+def roots_example(
+    time_out: Optional[float] = None,
+    out=out,
+    interactive: bool = True,
+    polynomials: "Optional[Sequence[Poly]]" = None,
+) -> None:
     """
-    Interactive demo of Schwartz-Zippel: count roots (exactly if feasible, otherwise partially).
+    Demo of Schwartz-Zippel: count roots (exactly if feasible, otherwise partially).
 
     - Prints the ambient space as (GF(p))^(v) to avoid confusion with extension fields.
-    - When enumeration completes, compares observed probability to the SZ bound (with if/then).
-    - When timed out, clearly labels the probability as a lower bound and reminds SZ is an upper bound.
+    - When enumeration completes, compares observed probability to the SZ bound.
+    - When timed out, labels the probability as a lower bound and reminds SZ is an upper bound.
+
+    Three ways to drive it:
+      * polynomials=[g1, g2, ...] runs exactly those, in order, and returns. This
+        is the prompt-free path a rendered book uses; pass whatever polynomials
+        you want to showcase (e.g. a small field where every root is found, then
+        a larger one where the search times out).
+      * interactive=False (no polynomials) runs the single built-in example.
+      * interactive=True (default) runs the built-in example, then offers more
+        from user input.
     """
     loop_counter: int = 0
     carry_on: bool = True
 
     while carry_on:
         # --- Choose polynomial ---
-        if loop_counter == 0:
+        if polynomials is not None:
+            if loop_counter >= len(polynomials):
+                break
+            g = polynomials[loop_counter]
+        elif loop_counter == 0:
             X = symbols("X_:3")
             g = Poly(X[0] * X[1] + X[2] ** 2, X, domain=GF(41, symmetric=False))
         else:
@@ -252,12 +279,78 @@ def roots_example(time_out: Optional[float] = None, out=out) -> None:
         display_aligned(*to_print, out=out)
 
         # --- Continue? ---
+        if polynomials is not None:
+            loop_counter += 1
+            continue          # run the whole list, prompt-free, then break at the top
+        if not interactive:
+            break
         again = out.input("\nAnother example? (y/n) ").strip().lower()
         loop_counter += 1
         if again == "n":
             carry_on = False
 
-def sum_check_example(out=out) -> None:
+def _sum_check_scripted(scenario: dict, *, out=out) -> None:
+    """Run one reproducible sum-check with a fixed claim and scripted challenges."""
+    g: Poly = scenario["poly"]
+    X = g.gens
+    F = g.domain
+    v = len(X)
+    claim = int(scenario["claim"])
+    challenges = list(scenario["challenges"])
+
+    H = F(sum(
+        g.eval({X[k]: b_k for k, b_k in enumerate(b)})
+        for b in product([F(0), F(1)], repeat=v)
+    ))
+    degree_bounds = [int(g.degree(gen)) for gen in X]
+
+    sink = Sink(make_renderer(out=out, field=F, view=SPECTATOR_VIEW))
+    sink.emit(ProtocolInitialized(
+        audience=Audience.PUBLIC, g=g,
+        degree_bounds=tuple(degree_bounds), num_vars=v,
+    ))
+    dishonest = (int(F.convert(claim)) != int(F.convert(H)))
+    prover = MachineProver(g, H, sink, dishonest_claim=dishonest, fixed_claim=claim)
+    verifier = ScriptedVerifier(F, challenges, out=out)
+    oracle = PolynomialOracle(g)
+    result = run_sum_check(
+        field=F, gens=X, degree_bounds=degree_bounds,
+        prover=prover, verifier=verifier, oracle=oracle, sink=sink, out=out,
+    )
+    res = (None if isinstance(result.verdict, Aborted)
+           else isinstance(result.verdict, Accepted))
+    sink.emit(GroundTruthRevealed(
+        audience=Audience.GROUND_TRUTH, g=g, gens_str=stringify(X), num_vars=v,
+        true_sum=int(H), claimed_sum=int(F.convert(result.claim)),
+        accepted=bool(res), use_commitment=False, dishonest_opening=False,
+    ))
+    if hasattr(out, "flush"):
+        out.flush()
+
+
+def sum_check_example(
+    out=out,
+    interactive: bool = True,
+    scenario: "Optional[dict]" = None,
+) -> None:
+    """Demo of the sum-check protocol.
+
+    Default: an honest machine prover over GF(5), verifier accepts.
+
+    scenario={...} runs a single reproducible, prompt-free scripted run and
+    returns. The dict keys are:
+        poly        : a sympy Poly over a prime field (the polynomial g)
+        claim       : the prover's claimed sum H* (an int); if it differs from
+                      the true H, the prover is dishonest
+        challenges  : the verifier's challenges r_0, r_1, ..., in order
+    This is how a book reproduces a specific run -- a particular sequence of
+    verifier choices -- with byte-identical output every time. See
+    ScriptedVerifier.
+    """
+    if scenario is not None:
+        _sum_check_scripted(scenario, out=out)
+        return
+
     loop_counter: int = 0
     carry_on: bool = True
     while carry_on:
@@ -320,6 +413,8 @@ def sum_check_example(out=out) -> None:
             ))
         else:
             sum_check()
+        if not interactive:
+            break
         again = out.input("\nAnother example? (y/n)").strip().lower()
         loop_counter += 1
         if again == 'n':
@@ -333,18 +428,29 @@ def multilinear_extension_example(
     compare: bool = False,
     *,
     out: TerminalOutput = out,
+    examples: "Optional[Sequence[dict]]" = None,
+    interactive: bool = True,
 ) -> Optional[Tuple[List[Poly], List[np.ndarray]]]:
     """
-    Interactive demo: build MLEs of functions f : {0,1}^v -> GF(p).
+    Demo: build MLEs of functions f : {0,1}^v -> GF(p).
 
-    - EXAMPLE 1 and 2 are fixed defaults over GF(11), v=2.
-    - After that, user can add more examples interactively.
-    - If compare=True, compares consecutive examples when p and v match.
+    Interactive (default): EXAMPLE 1 and 2 are fixed defaults over GF(11), v=2;
+    after that the user supplies further examples. If compare=True, consecutive
+    examples with matching (p, v) are compared.
+
+    Prompt-free (a rendered book): pass examples=[...] where each entry is a dict
+        {"p": prime, "v": num_vars, "values": {bitstring: int, ...}}
+    Those examples are run in order and the function returns -- no input() is
+    called. compare=True still compares consecutive matching (p, v) pairs.
+    interactive=False with no examples runs just the two canned defaults.
     """
     mle: List[Poly] = []
     grid: List[np.ndarray] = []
     pee: List[int] = []
     vee: List[int] = []
+
+    scripted = examples is not None
+    n_examples = len(examples) if examples is not None else 0
 
     loop_counter: int = 0
 
@@ -352,7 +458,15 @@ def multilinear_extension_example(
         # ----------------------------
         # Choose (p, v) for this example
         # ----------------------------
-        if loop_counter in {0, 1}:
+        if scripted:
+            assert examples is not None and n_examples is not None
+            if loop_counter >= n_examples:
+                break
+            spec = examples[loop_counter]
+            p = int(spec["p"])
+            v = int(spec["v"])
+            out.print(f"\n{BLUE}EXAMPLE {loop_counter + 1}.{RESET}")
+        elif loop_counter in {0, 1}:
             p = 11
             v = 2
             out.print(f"\n{BLUE}EXAMPLE {loop_counter + 1}.{RESET}")
@@ -390,7 +504,13 @@ def multilinear_extension_example(
             0: {(0, 0): 1, (0, 1): 2, (1, 0): 3, (1, 1): 4},
             1: {(0, 0): 1, (0, 1): 2, (1, 0): 3, (1, 1): 3},
         }
-        if loop_counter in _CANNED:
+        if scripted:
+            assert examples is not None
+            for point in product([0, 1], repeat=v):
+                value = int(examples[loop_counter]["values"][point])
+                func_values[point] = field(value)
+                out.print(f"The function value for input {point} is: {value}")
+        elif loop_counter in _CANNED:
             for point, value in _CANNED[loop_counter].items():
                 func_values[point] = field(value)
                 out.print(f"The function value for input {point} is: {value}")
@@ -461,6 +581,11 @@ def multilinear_extension_example(
         # ----------------------------
         # Prompt to continue (ALWAYS reachable)
         # ----------------------------
+        if scripted:
+            loop_counter += 1
+            continue        # run the whole list prompt-free; break at the top
+        if not interactive:
+            break
         again = out.input("\nAnother example? (y/n) ").strip().lower()
         loop_counter += 1
         if again != "y":

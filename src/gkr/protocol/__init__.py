@@ -41,6 +41,7 @@ from .sumcheck_parties import (
     MachineProver,
     NoOpening,
     RandomVerifier,
+    ScriptedVerifier,
 )
 from .sumcheck_render import make_renderer
 from .sumcheck_session import sum_check
@@ -51,7 +52,7 @@ __all__ = [
     "Notation", "Palette", "NOTEBOOK_NOTATION", "DEFAULT_PALETTE",
     "Cancelled", "NoOpening",
     "HonestProver", "MachineProver", "InteractiveProver",
-    "RandomVerifier", "InteractiveVerifier",
+    "RandomVerifier", "ScriptedVerifier", "InteractiveVerifier",
     "make_renderer",
     "Accepted", "Rejected", "Aborted", "TerminalValue",
     "SumCheckResult", "PolynomialOracle", "DeferredToCaller",

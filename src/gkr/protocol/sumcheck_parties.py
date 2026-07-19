@@ -125,11 +125,16 @@ class MachineProver(_ProverBase):
 
     def __init__(self, g: Poly, true_sum, sink: Sink, *,
                  dishonest_claim: bool = False,
-                 dishonest_opening: bool = False):
+                 dishonest_opening: bool = False,
+                 fixed_claim=None):
         super().__init__(g, sink)
         self.true_sum = true_sum
         self.dishonest_claim = dishonest_claim
         self.dishonest_opening = dishonest_opening
+        # When set, the prover claims exactly this value instead of drawing a
+        # random false claim. Used by reproducible scripted examples so the
+        # transcript is byte-identical every run.
+        self.fixed_claim = fixed_claim
 
     def sum_value(self, ctx) -> Union[int, Cancelled]:
         F = self.F
@@ -138,9 +143,12 @@ class MachineProver(_ProverBase):
             self.sink.emit(ClaimAnnounced(audience=Audience.PUBLIC,
                                           claim=int(F.convert(self.true_sum))))
             return self.true_sum
-        claim = self.true_sum
-        while claim == self.true_sum:   # the draw loop (see the RNG note in the session)acy: identical RNG consumption
-            claim = random_field_element(field=F, user_input=False, out=ctx.out)
+        if self.fixed_claim is not None:
+            claim = F.convert(self.fixed_claim)
+        else:
+            claim = self.true_sum
+            while claim == self.true_sum:   # draw loop; identical RNG consumption
+                claim = random_field_element(field=F, user_input=False, out=ctx.out)
         self.carried_claim = claim
         self.lying = True
         self.sink.emit(ClaimAnnounced(audience=Audience.PUBLIC, claim=int(F.convert(claim))))
@@ -327,6 +335,44 @@ class RandomVerifier:
 
     def gkr_tau(self, i: int) -> Union[int, Cancelled]:
         return random_field_element(field=self.F, user_input=False, out=self.out)
+
+
+class ScriptedVerifier:
+    """A verifier whose challenges are fixed in advance rather than random.
+
+    It plays back a given sequence of field elements as its round challenges,
+    in order. This is for reproducible worked examples: a book cell can show a
+    specific run of the protocol -- a particular sequence of verifier choices --
+    and get byte-identical output every time. The narration is unchanged; from
+    the transcript's point of view these look exactly like random draws, because
+    for soundness what matters is only that P could not predict them, not how
+    they were produced here.
+    """
+
+    def __init__(self, field, challenges, *, out: TerminalOutput = default_out):
+        self.F = field
+        self.out = out
+        self._challenges = [int(c) for c in challenges]
+        self._i = 0
+
+    def _next(self) -> int:
+        if self._i >= len(self._challenges):
+            raise ValueError(
+                f"ScriptedVerifier ran out of challenges after {self._i}; "
+                f"the protocol asked for more than the {len(self._challenges)} provided."
+            )
+        value = self._challenges[self._i]
+        self._i += 1
+        return int(self.F.convert(value))
+
+    def challenge(self, ctx) -> Union[int, Cancelled]:
+        return self._next()
+
+    def gkr_rho_coordinate(self, j: int) -> Union[int, Cancelled]:
+        return self._next()
+
+    def gkr_tau(self, i: int) -> Union[int, Cancelled]:
+        return self._next()
 
 
 class InteractiveVerifier:
