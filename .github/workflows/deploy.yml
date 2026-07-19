@@ -1,7 +1,8 @@
 # This file was created automatically with `myst init --gh-pages` 🪄 💚
 # Then edited to: build the MyST project in book/, install the gkr package
-# and graphviz so code cells execute and circuit images render, and execute
-# cells at build time.
+# and graphviz so code cells execute and circuit images render, install a
+# Jupyter kernel so --execute has something to run against, and execute cells
+# at build time.
 # Ensure your GitHub Pages settings for this repository are set to deploy with **GitHub Actions**.
 
 name: MyST GitHub Pages Deploy
@@ -45,8 +46,13 @@ jobs:
           python-version: '3.12'
       - name: Install graphviz (for circuit SVGs)
         run: sudo apt-get update && sudo apt-get install -y graphviz
-      - name: Install the gkr package
-        run: pip install -e .
+      - name: Install the gkr package and Jupyter kernel
+        # jupyter-server + ipykernel give MyST a kernel to execute {code-cell}
+        # blocks against; without them, --execute has nothing to run and cells
+        # render with no output.
+        run: |
+          pip install -e .
+          pip install jupyter-server ipykernel
       - name: Install MyST
         run: npm install -g mystmd
       # --- Build the book (which lives in book/) WITH execution ---
