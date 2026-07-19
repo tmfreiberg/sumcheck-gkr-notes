@@ -263,6 +263,10 @@ The shared screen shows the verifier's view; everything prover-private is
 appended to `prover.txt` instead. The same works from a notebook or script via
 `sum_check(secrets_to="prover.txt")` and `gkr(secrets_to="prover.txt")`.
 
+For the full guide — playing prover, verifier, or both; honest and dishonest
+provers; exit codes; and the equivalent notebook/script API — see
+[docs/cli.md](docs/cli.md).
+
 ## Development
 
 The test suite pins both the mathematics and the narration:
