@@ -1,13 +1,37 @@
-# Sum-check and GKR notebooks
+# Sum-check and GKR notes
 
-This repository contains a collection of **interactive mathematical notebooks**
-explaining the **sum-check protocol**, **multilinear extensions**, **arithmetic
-circuits**, and the **Goldwasser–Kalai–Rothblum (GKR) protocol**.
+## 📖 [Read the book → tmfreiberg.github.io/sumcheck-gkr-notes](https://tmfreiberg.github.io/sumcheck-gkr-notes)
 
-The emphasis is on _understanding_, _derivation_, and _mechanism_ rather than on
-performance, production engineering, or system integration. The material is
-intended for readers who want to see **why these protocols work**, how their
-guarantees arise, and how complexity and soundness behave in concrete examples.
+**The rendered book is the main event.** These are interactive, executable notes
+on the **sum-check protocol**, **multilinear extensions**, **arithmetic
+circuits**, and the **Goldwasser–Kalai–Rothblum (GKR) protocol** — with every
+theorem numbered and cross-linked, every citation resolved, and every worked
+example run live so you can read the actual output. Start there.
+
+> The `.md` files in this repository are the *source*. They render as plain
+> markup on GitHub; the [book site](https://tmfreiberg.github.io/sumcheck-gkr-notes)
+> is where they display properly.
+
+These notes are for people *learning* sum-check and GKR who want each step
+spelled out in detail. The emphasis is on _understanding_, _derivation_, and
+_mechanism_ rather than on performance or production engineering: **why these
+protocols work**, how their guarantees arise, and how complexity and soundness
+behave in concrete examples.
+
+The exposition follows Justin Thaler's presentation in his book
+[_Proofs, Arguments, and Zero-Knowledge_](https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf)
+(Foundations and Trends in Privacy and Security, Now Publishers, 2022),
+supplemented with additional background, full proofs, and interactive examples.
+
+They come with a companion Python package (`gkr`) that turns the protocols into
+something you can *play*. In the book, at a Jupyter notebook, or from the command
+line, you can take the role of the **prover**, the **verifier**, or neither and
+just watch — with each round narrated as it happens: the polynomials sent, the
+checks performed, the random challenges drawn, and (when you play a *dishonest*
+prover) exactly where the lie is caught, or, over a small enough field, the rare
+occasion it slips through. See the
+[worked examples in the book](https://tmfreiberg.github.io/sumcheck-gkr-notes)
+and the [command-line interface](#command-line-interface) below.
 
 This project is best thought of as a set of **working notes with executable
 examples**, not as a textbook or a cryptographic framework.
@@ -161,7 +185,12 @@ reflected in notebooks and scripts without reinstallation.
   pip install -e ".[dev]"
   ```
 
-### 4. Launch Jupyter
+### 4. Read the notes
+
+The rendered book lives at
+**[tmfreiberg.github.io/sumcheck-gkr-notes](https://tmfreiberg.github.io/sumcheck-gkr-notes)**
+and needs nothing installed to read. To run the material yourself — editing
+examples, trying your own polynomials and circuits — launch Jupyter:
 
 ```bash
 jupyter notebook
