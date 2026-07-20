@@ -168,7 +168,8 @@ If $h_j(r_0,\ldots,r_{v - 2}) \ne 0$, then $g(r_0,\ldots,r_{v-2},X_{v-1})$ is a 
 A striking feature of the Schwartz-Zippel bound is that it depends on the degree of the polynomial but not on the number of variables. This reflects the fact that low degree, rather than low dimension, is what prevents a polynomial from vanishing on a large fraction of points.
 ```
 
-```{prf:remark} dimension-independence of the bound
+```{prf:remark} 
+:label: rem-schwartz-zippel-integral-domain
 
 (i) The proof shows that $\mathbb{F}$ can actually be replaced by any integral domain $R$ (whether finite or infinite), provided we select $r_0, \ldots, r_{v - 1}$ from a finite subset $S \subseteq R$ and substitute $\#S$ for $\#\mathbb{F}$ in the denominator on the right-hand side. This generalization—the full result established by DeMillo and Lipton, Schwartz, and Zippel—is not required for our current purposes. 
 
