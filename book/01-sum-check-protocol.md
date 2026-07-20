@@ -274,7 +274,7 @@ g^*_{j - 1}(r_{j - 1}) \stackrel{?}{=} g^*_j(0) + g^*_j(1).
 \end{equation}
 This is because $g_{j - 1}(r_{j - 1}) = g_j(0) + g_j(1)$. To see this, note that by definition [](#eq-g-j),
 \begin{equation*}
-g_{j - 1}(r_{j - 1}) & = \sum_{b_{j} \in \{0,1\}} \cdots \sum_{b_{v-1} \in \{0,1\}} g(r_0,r_1,\ldots,r_{j-2},r_{j-1},b_{j},\ldots,b_{v - 1})
+g_{j - 1}(r_{j - 1}) = \sum_{b_{j} \in \{0,1\}} \cdots \sum_{b_{v-1} \in \{0,1\}} g(r_0,r_1,\ldots,r_{j-2},r_{j-1},b_{j},\ldots,b_{v - 1})
 \end{equation*}
 and 
 \begin{equation*}
