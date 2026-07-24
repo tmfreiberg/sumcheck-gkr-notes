@@ -38,3 +38,6 @@ env/
 # OS/editor
 .DS_Store
 .idea/
+
+# Work-in-progress on 'constraint system design'
+constraint_system_design_wip/
