@@ -1,22 +1,16 @@
 # Sum-check and GKR notes
 
-## 📖 [Read the book → tmfreiberg.github.io/sumcheck-gkr-notes](https://tmfreiberg.github.io/sumcheck-gkr-notes)
+These are interactive, executable notes on the **sum-check protocol**,
+**multilinear extensions**, **arithmetic circuits**, and the
+**Goldwasser–Kalai–Rothblum (GKR) protocol**. They are published as a
+[rendered book](https://tmfreiberg.github.io/sumcheck-gkr-notes), where every
+theorem is numbered and cross-linked, every citation resolved, and every worked
+example run live so you can read the actual output.
 
-**The rendered book is the main event.** These are interactive, executable notes
-on the **sum-check protocol**, **multilinear extensions**, **arithmetic
-circuits**, and the **Goldwasser–Kalai–Rothblum (GKR) protocol** — with every
-theorem numbered and cross-linked, every citation resolved, and every worked
-example run live so you can read the actual output. Start there.
-
-> The `.md` files in this repository are the *source*. They render as plain
-> markup on GitHub; the [book site](https://tmfreiberg.github.io/sumcheck-gkr-notes)
-> is where they display properly.
-
-These notes are for people *learning* sum-check and GKR who want each step
-spelled out in detail. The emphasis is on _understanding_, _derivation_, and
-_mechanism_ rather than on performance or production engineering: **why these
-protocols work**, how their guarantees arise, and how complexity and soundness
-behave in concrete examples.
+For people *learning* sum-check and GKR who want each step spelled out in 
+detail. The emphasis is on _understanding_, _derivation_, and _mechanism_ rather 
+than on performance or production engineering: **why these protocols work**, how 
+their guarantees arise, and how complexity and soundness behave in concrete examples.
 
 The exposition follows Justin Thaler's presentation in his book
 [_Proofs, Arguments, and Zero-Knowledge_](https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf)
