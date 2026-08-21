@@ -44,3 +44,4 @@ env/
 # reproducible from history -- they're covered by file-level backup instead.
 excluded/
 constraint_system_design_wip/
+requirements-frozen.txt
