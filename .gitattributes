@@ -1,1 +1,4 @@
+* text=auto eol=lf
+
+# Golden transcripts: their exact bytes are the test. Never normalised.
 tests/golden/transcripts/*.golden.txt -text
