@@ -5,9 +5,8 @@ freezes them: every scenario below runs a full protocol in a fresh subprocess
 with pinned randomness and canned stdin, and compares the captured output
 byte-for-byte against a blessed transcript in `transcripts/`.
 
-During the big refactor, these tests tell you immediately whether behavior or
-narration drifted — and *you* decide when a change is intentional, by
-re-blessing.
+These tests tell you immediately whether behavior or narration drifted, and
+*you* decide when a change is intentional, by re-blessing.
 
 ## Quickstart
 
@@ -39,9 +38,9 @@ addresses, so the *bitstring labels assigned to gates permuted from run to
 run* — reproducibility was impossible, and "gate (0,1)" meant a different gate
 each time you ran the same circuit.
 
-## Workflow during the refactor
+## Workflow
 
-1. Refactor freely.
+1. Change the code.
 2. `pytest tests/ -q`.
 3. A failing golden shows a unified diff with ANSI rendered as `⟨RED⟩`,
    `⟨GREEN⟩`, etc. If the change is a bug — fix it. If it's intentional —
@@ -53,8 +52,8 @@ SymPy version bumps can change expression string forms; the pytest run warns
 (without failing) when your versions differ from the blessed ones, so you can
 re-bless rather than chase phantom regressions.
 
-Recommended: add this line to `.gitattributes` so goldens stay byte-stable on
-Windows checkouts:
+The repository's `.gitattributes` keeps the goldens byte-stable on every
+checkout with this line; keep it whatever else changes there:
 
     tests/golden/transcripts/*.golden.txt -text
 
