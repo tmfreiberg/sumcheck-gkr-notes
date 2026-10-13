@@ -1,0 +1,46 @@
+# The gate, on every pull request and every push to main: the test suite
+# (including the byte-for-byte golden transcripts), ruff and mypy, installed
+# exactly from uv.lock. Dependabot's pull requests are checked by this.
+
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      # The circuit code builds Graphviz graphs.
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      # uv reads .python-version and installs that Python itself.
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install from the lock
+        run: uv sync --locked --extra dev
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Types
+        run: uv run mypy src/gkr
