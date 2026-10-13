@@ -18,9 +18,9 @@ The exposition follows Justin Thaler's presentation in his book
 supplemented with additional background, full proofs, and interactive examples.
 
 They come with a companion Python package (`gkr`) that turns the protocols into
-something you can *play*. In the book, at a Jupyter notebook, or from the command
-line, you can take the role of the **prover**, the **verifier**, or neither and
-just watch — with each round narrated as it happens: the polynomials sent, the
+something you can *play*. From the command line, or from Python (a script or a
+Jupyter notebook), you can take the role of the **prover**, the **verifier**, or
+neither and just watch — with each round narrated as it happens: the polynomials sent, the
 checks performed, the random challenges drawn, and (when you play a *dishonest*
 prover) exactly where the lie is caught, or, over a small enough field, the rare
 occasion it slips through. See the
@@ -46,9 +46,9 @@ examples**, not as a textbook or a cryptographic framework.
 - A performance-optimized implementation
 - A substitute for peer-reviewed protocol specifications
 
-## Current notebook topics
+## Topics
 
-The notebooks currently cover (but are not limited to):
+The book's four chapters cover (but are not limited to):
 
 - **Sum-check protocol**
   - Correctness, soundness, and error bounds
@@ -74,8 +74,9 @@ The scope may expand over time as additional related topics become relevant.
 
 ## Installation
 
-The project is packaged as a standard Python package so that the notebooks can
-focus on mathematics rather than setup code.
+The project is packaged as a standard Python package so that the book's code
+can focus on mathematics rather than setup code. You only need to install it to
+play the protocols yourself; reading the book needs nothing installed.
 
 Python **3.10 or later** is required. The only **system-level dependency** is
 **Graphviz**, which is required for circuit and protocol visualizations.
@@ -111,17 +112,10 @@ dot -V
 
 ### 2. Create a Python environment (recommended)
 
-You can use either **conda** or **pip + venv**. Conda is recommended if you want
-a fully reproducible environment.
+Any of these works. **pip + venv** is the plain route; **uv** reproduces the
+exact, locked environment the tests run in.
 
-#### Option A: Conda (recommended)
-
-```bash
-conda env create -f environment.yaml
-conda activate gkr
-```
-
-#### Option B: pip + venv
+#### Option A: pip + venv
 
 ```bash
 # Create a virtual environment
@@ -141,6 +135,30 @@ Activate it:
   ```bash
   source .venv/bin/activate
   ```
+
+Then install the package (step 3).
+
+#### Option B: Conda
+
+```bash
+conda env create -f environment.yaml
+conda activate gkr
+```
+
+This creates the environment and installs the package with the `notebook` and
+`colors` extras, so step 3 is already done.
+
+#### Option C: uv (the locked environment)
+
+With [uv](https://docs.astral.sh/uv/) installed, from the project root:
+
+```bash
+uv sync --locked --extra notebook --extra colors
+```
+
+This creates `.venv` with the exact versions in `uv.lock` and installs the
+package into it, so step 3 is already done. Run commands through it with
+`uv run`, for example `uv run gkr sumcheck`, or activate `.venv` as above.
 
 ### 3. Install the package (editable mode)
 
@@ -179,25 +197,26 @@ reflected in notebooks and scripts without reinstallation.
   pip install -e ".[dev]"
   ```
 
-### 4. Read the notes
+### 4. Read the notes, then play
 
-The rendered book lives at
-**[tmfreiberg.github.io/sumcheck-gkr-notes](https://tmfreiberg.github.io/sumcheck-gkr-notes)**
-and needs nothing installed to read. To run the material yourself — editing
-examples, trying your own polynomials and circuits — launch Jupyter:
+The notes are the rendered book at
+**[tmfreiberg.github.io/sumcheck-gkr-notes](https://tmfreiberg.github.io/sumcheck-gkr-notes)**,
+which needs nothing installed to read. Its worked examples were run when the
+book was built, so what you see is real output. Its source is `book/*.md`
+(MyST Markdown).
 
-```bash
-jupyter notebook
+To run things yourself — your own polynomials and circuits, playing prover or
+verifier — use the [command-line interface](#command-line-interface) below,
+or the same functions from Python. In a script, or in a notebook started with
+`jupyter lab` (from the `notebook` extra):
+
+```python
+import gkr
+
+gkr.gkr_example()                     # a complete worked example, no prompts
 ```
 
-or, if you prefer:
-
-```bash
-jupyter lab
-```
-
-The notebooks can import the package directly; no additional initialization is
-required.
+[docs/cli.md](docs/cli.md) sets the Python functions beside the commands.
 
 ### Notes
 
@@ -207,7 +226,7 @@ required.
 
 ## Command-line interface
 
-Everything the notebooks show can also be run from a terminal, via the `gkr`
+Everything the book shows can also be run from a terminal, via the `gkr`
 command installed with the package:
 
 ```bash
@@ -270,6 +289,24 @@ pip install -e ".[dev]"
 pytest                                # 83 tests; a few minutes
 ruff check .
 mypy src/gkr
+```
+
+Continuous integration runs the same checks in the locked environment. To
+match it exactly:
+
+```bash
+uv sync --locked --extra dev
+uv run pytest
+uv run ruff check .
+uv run mypy src/gkr
+```
+
+The dev extra also builds the book locally, executing every code cell; this
+needs [Node.js](https://nodejs.org/) on your `PATH`:
+
+```bash
+cd book
+uv run myst build --html --execute    # output in book/_build/html
 ```
 
 - `tests/test_golden.py` compares 18 recorded sessions against

@@ -1,10 +1,10 @@
-# Using `gkr`: command-line interface and notebook API
+# Using `gkr`: command-line interface and Python API
 
 This is a guide to running the protocols yourself — from a terminal with the
 `gkr` command, or from a notebook or script with the Python functions. It
 covers the things that are not obvious from `--help`: the presentation
 workflow, the exit-code contract, quoting on Windows, and how the command line
-and the notebook API line up.
+and the Python API line up.
 
 Every subcommand also has its own `gkr <command> --help` with a worked example
 block. This document is the map; `--help` is the detail.
@@ -13,7 +13,7 @@ block. This document is the map; `--help` is the detail.
 
 ## The six subcommands at a glance
 
-| Command | What it does | Notebook |
+| Command | What it does | Chapter |
 |---|---|---|
 | `gkr sumcheck` (`sc`) | Run the sum-check protocol on a polynomial `g`. | 01 |
 | `gkr gkr` | Run the GKR protocol on a layered arithmetic circuit. | 04 |
@@ -250,10 +250,10 @@ book's automated build sets to `never` for clean, monochrome cell output.
 
 ---
 
-## The notebook / script API
+## The Python API (scripts and notebooks)
 
-Everything above is also available as plain Python, which is how the notebooks
-drive it. The functions keep the substantive logic; the notebooks and the CLI
+Everything above is also available as plain Python, which is how the book
+drives it. The functions keep the substantive logic; the book and the CLI
 are thin surfaces over them.
 
 ```python
