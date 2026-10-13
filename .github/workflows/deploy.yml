@@ -1,31 +1,35 @@
-# This file was created automatically with `myst init --gh-pages` 🪄 💚
-# Then edited to: build the MyST project in book/, install the gkr package
-# and graphviz so code cells execute and circuit images render, install a
-# Jupyter kernel so --execute has something to run against, and execute cells
-# at build time.
-# Ensure your GitHub Pages settings for this repository are set to deploy with **GitHub Actions**.
+# Builds the MyST book in book/ with every code cell executed, and publishes
+# it to GitHub Pages, on every push to main.
+#
+# Everything comes from uv.lock: the gkr package the cells import, mystmd,
+# and the Jupyter kernel that --execute needs (jupyter-server, ipykernel; the
+# dev extra). Without a kernel the build still succeeds but every cell
+# renders empty. The PyPI mystmd package is a wrapper that needs Node.
+#
+# GitHub Pages must be set to deploy from GitHub Actions (Settings, Pages).
 
 name: MyST GitHub Pages Deploy
+
 on:
   push:
-    # Runs on pushes targeting the default branch
     branches: [main]
+  workflow_dispatch:
+
 env:
-  # `BASE_URL` determines, relative to the root of the domain, the URL that your site is served from.
-  # E.g., if your site lives at `https://mydomain.org/myproject`, set `BASE_URL=/myproject`.
-  # If, instead, your site lives at the root of the domain, at `https://mydomain.org`, set `BASE_URL=''`.
+  # The site is served from https://<owner>.github.io/<repo>, not the root.
   BASE_URL: /${{ github.event.repository.name }}
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+
+# One deployment at a time; a queued run waits rather than cancelling the
+# one in progress.
 concurrency:
-  group: 'pages'
+  group: pages
   cancel-in-progress: false
+
 jobs:
   deploy:
     environment:
@@ -33,38 +37,37 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
       - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - uses: actions/setup-node@v4
+        uses: actions/configure-pages@v6
+
+      - uses: actions/setup-node@v7
         with:
-          node-version: 18.x
-      # --- Python + the gkr package, so {code-cell} blocks can import gkr ---
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install graphviz (for circuit SVGs)
+          node-version: 24
+
+      # Circuit diagrams in the book are rendered by Graphviz.
+      - name: Install Graphviz
         run: sudo apt-get update && sudo apt-get install -y graphviz
-      - name: Install the gkr package and Jupyter kernel
-        # jupyter-server + ipykernel give MyST a kernel to execute {code-cell}
-        # blocks against; without them, --execute has nothing to run and cells
-        # render with no output.
-        run: |
-          pip install -e .
-          pip install jupyter-server ipykernel
-      - name: Install MyST
-        run: npm install -g mystmd
-      # --- Build the book (which lives in book/) WITH execution ---
-      - name: Build HTML Assets
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install from the lock
+        run: uv sync --locked --extra dev
+
+      - name: Build HTML with executed cells
         working-directory: book
-        run: myst build --html --execute
+        run: uv run myst build --html --execute
         env:
           GKR_COLOR: never
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
-          path: './book/_build/html'
+          path: ./book/_build/html
+
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
