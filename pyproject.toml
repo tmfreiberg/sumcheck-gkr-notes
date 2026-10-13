@@ -84,3 +84,11 @@ ignore_missing_imports = true   # sympy, networkx, graphviz, pydot ship no stubs
 # the code works, so it makes mypy's verdict depend on where it runs.
 warn_unused_ignores = true
 exclude = ["notebooks/"]
+
+[[tool.mypy.overrides]]
+# numpy's own stubs (2.5 and later) use the "type" statement, which needs
+# Python 3.12 to parse, while this config checks as 3.10. Skip them: numpy is
+# used here only for object arrays of sympy polynomials, so nothing is lost.
+module = ["numpy", "numpy.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
