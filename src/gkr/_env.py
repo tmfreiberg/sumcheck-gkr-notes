@@ -26,7 +26,7 @@ def init(*, verbose: bool = False, root: Optional[Union[str, Path]] = None) -> D
     env: Dict[str, Any] = {
         "PROJECT_PATH": project_root,
         "SCRIPTS_PATH": project_root / "src" / "gkr",
-        "NOTEBOOKS_PATH": project_root / "notebooks",
+        "BOOK_PATH": project_root / "book",
         "print_header": utils.print_header,
         "display_aligned": utils.display_aligned,
         "RED": utils.RED,
@@ -40,7 +40,7 @@ def init(*, verbose: bool = False, root: Optional[Union[str, Path]] = None) -> D
 
     if verbose:
         utils.print_header("Project paths")
-        for name in ("PROJECT_PATH", "SCRIPTS_PATH", "NOTEBOOKS_PATH"):
+        for name in ("PROJECT_PATH", "SCRIPTS_PATH", "BOOK_PATH"):
             print(f"{name} = {env[name]}")
 
     return env

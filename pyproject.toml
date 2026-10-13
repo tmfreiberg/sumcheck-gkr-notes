@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gkr"
 version = "0.1.0"
-description = "Interactive GKR + sumcheck notebooks + utilities"
+description = "Interactive sum-check and GKR protocols: play prover or verifier, from the command line or Python"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -60,7 +60,6 @@ filterwarnings = [
 # and pyproject says >=3.10. ruff is what noticed the claim had become a lie.
 target-version = "py310"
 line-length = 120
-extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 # The defaults (E4/E7/E9/F) plus import hygiene. Deliberately NOT the whole
@@ -85,7 +84,6 @@ ignore_missing_imports = true   # sympy, networkx, graphviz, pydot ship no stubs
 # that way -- an ignore for a platform branch is "unused" on the platform where
 # the code works, so it makes mypy's verdict depend on where it runs.
 warn_unused_ignores = true
-exclude = ["notebooks/"]
 
 [[tool.mypy.overrides]]
 # numpy's own stubs (2.5 and later) use the "type" statement, which needs
