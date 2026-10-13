@@ -1,0 +1,47 @@
+# Monthly dependency updates, grouped so they arrive as a few pull requests
+# rather than one per package. Each pull request is checked by the tests
+# workflow before it can be merged.
+
+version: 2
+
+updates:
+  # Python dependencies. The "uv" ecosystem updates uv.lock as well as
+  # pyproject.toml; the "pip" ecosystem would leave the lock behind.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    # A dependency joins the first group it matches.
+    groups:
+      # On its own: a sympy release can change how expressions print, and
+      # with it the golden transcripts, which then need re-blessing.
+      sympy:
+        patterns:
+          - "sympy"
+      dev-tools:
+        patterns:
+          - "pytest"
+          - "ruff"
+          - "mypy"
+          - "mystmd"
+      jupyter:
+        patterns:
+          - "jupyter*"
+          - "notebook"
+          - "ipykernel"
+          - "ipython"
+          - "ipywidgets"
+          - "tornado"
+      runtime:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions:
+        patterns:
+          - "*"
