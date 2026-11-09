@@ -1,6 +1,11 @@
-# The gate, on every pull request and every push to main: the test suite
-# (including the byte-for-byte golden transcripts), ruff and mypy, installed
-# exactly from uv.lock. Dependabot's pull requests are checked by this.
+# On every pull request and every push to main, installed exactly from
+# uv.lock. Dependabot's pull requests are checked by this.
+#
+#   gate  the test suite (including the byte-for-byte golden transcripts),
+#         ruff and mypy
+#   book  the MyST book built as deploy.yml builds it, every cell executed,
+#         so a change to mystmd, the Jupyter stack or sympy is checked
+#         before it is merged rather than when it is published
 
 name: tests
 
@@ -44,3 +49,37 @@ jobs:
 
       - name: Types
         run: uv run mypy src/gkr
+
+  book:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # The PyPI mystmd package is a wrapper that needs Node (22 or later).
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # Circuit diagrams in the book are rendered by Graphviz.
+      - name: Install Graphviz
+        run: sudo apt-get update && sudo apt-get install -y graphviz
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      # The dev extra carries mystmd and the kernel (jupyter-server,
+      # ipykernel) that --execute needs.
+      - name: Install from the lock
+        run: uv sync --locked --extra dev
+
+      # --strict turns build errors into a failed step: a cell that raises,
+      # or no kernel at all ("Could not load Jupyter session manager"),
+      # where a plain build would succeed with the cells left empty.
+      # Warnings, such as a duplicate label, do not fail it.
+      - name: Build HTML with executed cells
+        working-directory: book
+        run: uv run myst build --html --execute --strict
+        env:
+          GKR_COLOR: never
