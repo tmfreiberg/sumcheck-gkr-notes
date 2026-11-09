@@ -3,8 +3,13 @@
 #
 # Everything comes from uv.lock: the gkr package the cells import, mystmd,
 # and the Jupyter kernel that --execute needs (jupyter-server, ipykernel; the
-# dev extra). Without a kernel the build still succeeds but every cell
-# renders empty. The PyPI mystmd package is a wrapper that needs Node.
+# dev extra). The PyPI mystmd package is a wrapper that needs Node.
+#
+# --strict stops the run before anything is published if the build has
+# errors: a cell that raises, or no kernel at all. Without it the build
+# succeeds with those cells empty and the broken book goes live. On a
+# failure the site keeps the last good version. The same build runs on
+# every pull request (tests.yml, job "book").
 #
 # GitHub Pages must be set to deploy from GitHub Actions (Settings, Pages).
 
@@ -59,7 +64,7 @@ jobs:
 
       - name: Build HTML with executed cells
         working-directory: book
-        run: uv run myst build --html --execute
+        run: uv run myst build --html --execute --strict
         env:
           GKR_COLOR: never
 
