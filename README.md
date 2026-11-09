@@ -78,7 +78,7 @@ The project is packaged as a standard Python package so that the book's code
 can focus on mathematics rather than setup code. You only need to install it to
 play the protocols yourself; reading the book needs nothing installed.
 
-Python **3.10 or later** is required. The only **system-level dependency** is
+Python **3.12 or later** is required. The only **system-level dependency** is
 **Graphviz**, which is required for circuit and protocol visualizations.
 
 ### 1. System prerequisite: Graphviz

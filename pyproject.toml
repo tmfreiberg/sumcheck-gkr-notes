@@ -7,7 +7,7 @@ name = "gkr"
 version = "0.1.0"
 description = "Interactive sum-check and GKR protocols: play prover or verifier, from the command line or Python"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
   "sympy>=1.12",
   "numpy>=1.24",
@@ -55,10 +55,10 @@ filterwarnings = [
 
 
 [tool.ruff]
-# The f-strings in the renderers must stay parseable by the version we claim to
-# support: reusing the outer quote inside an f-string is PEP 701, i.e. 3.12+,
-# and pyproject says >=3.10. ruff is what noticed the claim had become a lie.
-target-version = "py310"
+# Matches requires-python, so ruff flags syntax newer than the floor (it once
+# caught PEP 701 f-strings, 3.12+, while the floor was still 3.10). The floor is
+# 3.12: the version CI tests and the golden transcripts are blessed under.
+target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
@@ -75,7 +75,7 @@ select = ["E4", "E7", "E9", "F", "I"]
 "src/gkr/protocol/__init__.py" = ["F401"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 ignore_missing_imports = true   # sympy, networkx, graphviz, pydot ship no stubs
 # There are currently no `type: ignore` comments in the codebase: platform- and
 # optional-dependency branches are handled structurally instead. mypy narrows on
@@ -84,11 +84,3 @@ ignore_missing_imports = true   # sympy, networkx, graphviz, pydot ship no stubs
 # that way -- an ignore for a platform branch is "unused" on the platform where
 # the code works, so it makes mypy's verdict depend on where it runs.
 warn_unused_ignores = true
-
-[[tool.mypy.overrides]]
-# numpy's own stubs (2.5 and later) use the "type" statement, which needs
-# Python 3.12 to parse, while this config checks as 3.10. Skip them: numpy is
-# used here only for object arrays of sympy polynomials, so nothing is lost.
-module = ["numpy", "numpy.*"]
-follow_imports = "skip"
-follow_imports_for_stubs = true
